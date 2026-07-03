@@ -22,87 +22,6 @@
 #include "communication/networkmanager.h"
 #include "communication/frame.h"
 
-// 专业配色方案
-const QString STYLE_SHEET = R"(
-    QMainWindow { background-color: #f5f6fa; }
-    QGroupBox {
-        font-weight: bold;
-        font-size: 12px;
-        color: #2c3e50;
-        border: 1px solid #dcdde1;
-        border-radius: 6px;
-        margin-top: 12px;
-        padding-top: 16px;
-        background-color: white;
-    }
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 12px;
-        padding: 0 8px;
-        background-color: #3498db;
-        color: white;
-        border-radius: 4px;
-    }
-    QLabel {
-        color: #2c3e50;
-        font-size: 12px;
-    }
-    QLineEdit, QSpinBox, QComboBox {
-        padding: 6px;
-        border: 1px solid #dcdde1;
-        border-radius: 4px;
-        background-color: white;
-        font-size: 12px;
-    }
-    QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
-        border: 2px solid #3498db;
-    }
-    QPushButton {
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-weight: bold;
-        font-size: 12px;
-        border: none;
-    }
-    QPushButton:disabled {
-        background-color: #bdc3c7;
-        color: #7f8c8d;
-    }
-    QTableWidget {
-        border: 1px solid #dcdde1;
-        border-radius: 4px;
-        gridline-color: #ecf0f1;
-        background-color: white;
-        alternate-background-color: #f8f9fa;
-    }
-    QTableWidget::item {
-        padding: 6px;
-    }
-    QTableWidget::item:selected {
-        background-color: #3498db;
-        color: white;
-    }
-    QHeaderView::section {
-        background-color: #34495e;
-        color: white;
-        padding: 8px;
-        border: none;
-        font-weight: bold;
-    }
-    QTextEdit {
-        border: 1px solid #dcdde1;
-        border-radius: 4px;
-        background-color: #2c3e50;
-        color: #ecf0f1;
-        font-family: Consolas;
-        font-size: 11px;
-    }
-    QStatusBar {
-        background-color: #34495e;
-        color: white;
-    }
-)";
-
 class RadarMainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -112,7 +31,6 @@ public:
     {
         setWindowTitle("雷达测风系统 - 监控终端 V1.0");
         resize(1400, 900);
-        setStyleSheet(STYLE_SHEET);
 
         m_network = new NetworkManager(this);
         m_connected = false;
@@ -127,7 +45,7 @@ private slots:
     {
         QString ip = m_ipEdit->text();
         int port = m_portSpin->value();
-        statusBar()->showMessage("正在连接 " + ip + ":" + QString::number(port) + "...");
+        statusBar()->showMessage("正在连接...");
         m_network->connectToHost(ip, port, NetworkManager::TCP);
     }
 
@@ -144,7 +62,7 @@ private slots:
         if (m_network->sendStartMeasure()) {
             m_measuring = true;
             updateUI();
-            m_logText->append("[TX] 启动测量命令");
+            m_logText->append("[TX] 启动测量");
         }
     }
 
@@ -153,7 +71,7 @@ private slots:
         if (m_network->sendStopMeasure()) {
             m_measuring = false;
             updateUI();
-            m_logText->append("[TX] 停止测量命令");
+            m_logText->append("[TX] 停止测量");
         }
     }
 
@@ -161,7 +79,7 @@ private slots:
     {
         int beamIndex = m_beamCombo->currentIndex();
         if (m_network->sendSwitchBeam(beamIndex)) {
-            m_beamValue->setText(QString("%1 (°%2)").arg(beamIndex).arg(beamIndex * 72));
+            m_beamLabel->setText(QString("波束 %1 (%2°)").arg(beamIndex).arg(beamIndex * 72));
             m_logText->append("[TX] 切换波束: " + QString::number(beamIndex));
         }
     }
@@ -185,9 +103,9 @@ private slots:
         m_connected = true;
         updateUI();
         statusBar()->showMessage("已连接: " + m_ipEdit->text() + ":" + QString::number(m_portSpin->value()));
-        m_connIndicator->setStyleSheet("background-color: #27ae60; border-radius: 10px; min-width: 20px; max-width: 20px; min-height: 20px; max-height: 20px;");
+        m_connIndicator->setStyleSheet("background-color: #27ae60; min-width: 16px; max-width: 16px; min-height: 16px; max-height: 16px; border-radius: 8px;");
         m_connStatus->setText("已连接");
-        m_connStatus->setStyleSheet("color: #27ae60; font-weight: bold; font-size: 14px;");
+        m_connStatus->setStyleSheet("color: #27ae60; font-weight: bold;");
         m_logText->append("[SYS] 连接成功");
     }
 
@@ -196,10 +114,10 @@ private slots:
         m_connected = false;
         m_measuring = false;
         updateUI();
-        statusBar()->showMessage("已断开连接");
-        m_connIndicator->setStyleSheet("background-color: #e74c3c; border-radius: 10px; min-width: 20px; max-width: 20px; min-height: 20px; max-height: 20px;");
+        statusBar()->showMessage("已断开");
+        m_connIndicator->setStyleSheet("background-color: #e74c3c; min-width: 16px; max-width: 16px; min-height: 16px; max-height: 16px; border-radius: 8px;");
         m_connStatus->setText("未连接");
-        m_connStatus->setStyleSheet("color: #e74c3c; font-weight: bold; font-size: 14px;");
+        m_connStatus->setStyleSheet("color: #e74c3c; font-weight: bold;");
         m_logText->append("[SYS] 连接断开");
     }
 
@@ -218,7 +136,7 @@ private slots:
                 parseStatusResponse(payload);
                 break;
             case 0x0007:
-                m_versionValue->setText(QString::fromLatin1(payload));
+                m_versionLabel->setText(QString::fromLatin1(payload));
                 m_logText->append("[RX] 版本: " + QString::fromLatin1(payload));
                 break;
             case 0x0301:
@@ -249,7 +167,7 @@ private slots:
 
     void onStatisticsUpdated(double sendRate, double recvRate)
     {
-        m_statsLabel->setText(QString("TX: %1 KB/s  RX: %2 KB/s")
+        m_statsLabel->setText(QString("TX: %1 KB/s | RX: %2 KB/s")
                              .arg(sendRate / 1024, 0, 'f', 1)
                              .arg(recvRate / 1024, 0, 'f', 1));
     }
@@ -264,9 +182,9 @@ private:
         float voltage = *reinterpret_cast<const float*>(data + 11);
 
         QString stateStr = (state == 3) ? "测量中" : (state == 2) ? "运行中" : "空闲";
-        m_stateValue->setText(stateStr);
-        m_tempValue->setText(QString("%1 ℃").arg(temp, 0, 'f', 1));
-        m_voltValue->setText(QString("%1 V").arg(voltage, 0, 'f', 2));
+        m_stateLabel->setText("系统状态: " + stateStr);
+        m_tempLabel->setText(QString("温度: %1 ℃").arg(temp, 0, 'f', 1));
+        m_voltLabel->setText(QString("电压: %1 V").arg(voltage, 0, 'f', 2));
         m_logText->append("[RX] 状态: " + stateStr);
     }
 
@@ -287,7 +205,7 @@ private:
         offset += 4;
         offset += 3;
 
-        m_beamValue->setText(QString("%1 (°%2)").arg(beamIndex).arg(beamIndex * 72));
+        m_beamLabel->setText(QString("波束 %1 (%2°)").arg(beamIndex).arg(beamIndex * 72));
 
         QVector<float> speeds;
         for (int i = 0; i < 30 && offset + 4 <= payload.size(); i++) {
@@ -325,11 +243,11 @@ private:
             float avg = 0;
             for (float s : speeds) avg += s;
             avg /= speeds.size();
-            m_avgSpeedValue->setText(QString("%1 m/s").arg(avg, 0, 'f', 2));
+            m_avgSpeedLabel->setText(QString("平均风速: %1 m/s").arg(avg, 0, 'f', 2));
         }
 
         m_dataCount++;
-        m_dataCountValue->setText(QString::number(m_dataCount));
+        m_dataCountLabel->setText(QString("数据包: %1").arg(m_dataCount));
         m_logText->append("[RX] 风场: 波束" + QString::number(beamIndex) + ", " + QString::number(speeds.size()) + "层");
     }
 
@@ -347,24 +265,26 @@ private:
     void setupUI()
     {
         QWidget *central = new QWidget;
+        central->setStyleSheet("background-color: #f0f2f5;");
         setCentralWidget(central);
+
         QVBoxLayout *mainLayout = new QVBoxLayout(central);
         mainLayout->setSpacing(8);
-        mainLayout->setContentsMargins(12, 12, 12, 12);
+        mainLayout->setContentsMargins(10, 10, 10, 10);
 
         // 标题栏
         QWidget *header = new QWidget;
-        header->setStyleSheet("background-color: #34495e; border-radius: 6px; padding: 8px;");
+        header->setStyleSheet("background-color: #1a73e8; border-radius: 6px; padding: 12px;");
         QHBoxLayout *headerLayout = new QHBoxLayout(header);
-        QLabel *title = new QLabel("📡 雷达测风系统监控终端");
-        title->setStyleSheet("color: white; font-size: 18px; font-weight: bold;");
+        QLabel *title = new QLabel("雷达测风系统监控终端");
+        title->setStyleSheet("color: white; font-size: 20px; font-weight: bold;");
         headerLayout->addWidget(title);
         headerLayout->addStretch();
         m_connIndicator = new QLabel;
-        m_connIndicator->setStyleSheet("background-color: #e74c3c; border-radius: 10px; min-width: 20px; max-width: 20px; min-height: 20px; max-height: 20px;");
+        m_connIndicator->setStyleSheet("background-color: #e74c3c; min-width: 16px; max-width: 16px; min-height: 16px; max-height: 16px; border-radius: 8px;");
         headerLayout->addWidget(m_connIndicator);
         m_connStatus = new QLabel("未连接");
-        m_connStatus->setStyleSheet("color: #e74c3c; font-weight: bold; font-size: 14px;");
+        m_connStatus->setStyleSheet("color: white; font-weight: bold; font-size: 14px;");
         headerLayout->addWidget(m_connStatus);
         mainLayout->addWidget(header);
 
@@ -383,6 +303,7 @@ private:
 
         // 连接配置
         QGroupBox *connGroup = new QGroupBox("连接配置");
+        connGroup->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #dcdde1; border-radius: 6px; margin-top: 12px; padding-top: 16px; background-color: white; } QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 8px; background-color: #1a73e8; color: white; border-radius: 4px; }");
         QGridLayout *connLayout = new QGridLayout(connGroup);
         connLayout->setSpacing(8);
         connLayout->addWidget(new QLabel("IP地址:"), 0, 0);
@@ -395,10 +316,10 @@ private:
         connLayout->addWidget(m_portSpin, 1, 1);
         QHBoxLayout *btnLayout = new QHBoxLayout;
         m_connectBtn = new QPushButton("连接");
-        m_connectBtn->setStyleSheet("background-color: #27ae60; color: white;");
+        m_connectBtn->setStyleSheet("QPushButton { background-color: #34a853; color: white; font-weight: bold; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #2d9249; }");
         btnLayout->addWidget(m_connectBtn);
         m_disconnectBtn = new QPushButton("断开");
-        m_disconnectBtn->setStyleSheet("background-color: #e74c3c; color: white;");
+        m_disconnectBtn->setStyleSheet("QPushButton { background-color: #ea4335; color: white; font-weight: bold; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #d33426; }");
         m_disconnectBtn->setEnabled(false);
         btnLayout->addWidget(m_disconnectBtn);
         connLayout->addLayout(btnLayout, 2, 0, 1, 2);
@@ -406,15 +327,16 @@ private:
 
         // 雷达控制
         QGroupBox *ctrlGroup = new QGroupBox("雷达控制");
+        ctrlGroup->setStyleSheet(connGroup->styleSheet());
         QGridLayout *ctrlLayout = new QGridLayout(ctrlGroup);
         ctrlLayout->setSpacing(8);
         QHBoxLayout *ctrlBtnLayout = new QHBoxLayout;
-        m_startBtn = new QPushButton("▶ 启动测量");
-        m_startBtn->setStyleSheet("background-color: #3498db; color: white;");
+        m_startBtn = new QPushButton("启动测量");
+        m_startBtn->setStyleSheet("QPushButton { background-color: #1a73e8; color: white; font-weight: bold; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #1557b0; }");
         m_startBtn->setEnabled(false);
         ctrlBtnLayout->addWidget(m_startBtn);
-        m_stopBtn = new QPushButton("⏹ 停止测量");
-        m_stopBtn->setStyleSheet("background-color: #95a5a6; color: white;");
+        m_stopBtn = new QPushButton("停止测量");
+        m_stopBtn->setStyleSheet("QPushButton { background-color: #9aa0a6; color: white; font-weight: bold; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #80868b; }");
         m_stopBtn->setEnabled(false);
         ctrlBtnLayout->addWidget(m_stopBtn);
         ctrlLayout->addLayout(ctrlBtnLayout, 0, 0, 1, 2);
@@ -425,11 +347,11 @@ private:
         ctrlLayout->addWidget(m_beamCombo, 1, 1);
         QHBoxLayout *queryBtnLayout = new QHBoxLayout;
         m_statusBtn = new QPushButton("查询状态");
-        m_statusBtn->setStyleSheet("background-color: #9b59b6; color: white;");
+        m_statusBtn->setStyleSheet("QPushButton { background-color: #fbbc04; color: white; font-weight: bold; padding: 8px; border-radius: 4px; } QPushButton:hover { background-color: #e0a800; }");
         m_statusBtn->setEnabled(false);
         queryBtnLayout->addWidget(m_statusBtn);
         m_versionBtn = new QPushButton("查询版本");
-        m_versionBtn->setStyleSheet("background-color: #8e44ad; color: white;");
+        m_versionBtn->setStyleSheet("QPushButton { background-color: #fbbc04; color: white; font-weight: bold; padding: 8px; border-radius: 4px; } QPushButton:hover { background-color: #e0a800; }");
         m_versionBtn->setEnabled(false);
         queryBtnLayout->addWidget(m_versionBtn);
         ctrlLayout->addLayout(queryBtnLayout, 2, 0, 1, 2);
@@ -444,40 +366,39 @@ private:
         midLayout->setSpacing(12);
 
         QGroupBox *sysGroup = new QGroupBox("系统状态");
+        sysGroup->setStyleSheet(connGroup->styleSheet());
         QGridLayout *sysLayout = new QGridLayout(sysGroup);
         sysLayout->setSpacing(10);
 
         sysLayout->addWidget(new QLabel("连接状态:"), 0, 0);
         m_connStatusLabel = new QLabel("--");
-        m_connStatusLabel->setStyleSheet("font-weight: bold;");
         sysLayout->addWidget(m_connStatusLabel, 0, 1);
 
         sysLayout->addWidget(new QLabel("当前波束:"), 1, 0);
-        m_beamValue = new QLabel("0 (°0)");
-        m_beamValue->setStyleSheet("font-weight: bold; color: #3498db;");
-        sysLayout->addWidget(m_beamValue, 1, 1);
+        m_beamLabel = new QLabel("0 (0°)");
+        m_beamLabel->setStyleSheet("font-weight: bold; color: #1a73e8;");
+        sysLayout->addWidget(m_beamLabel, 1, 1);
 
         sysLayout->addWidget(new QLabel("系统状态:"), 2, 0);
-        m_stateValue = new QLabel("--");
-        m_stateValue->setStyleSheet("font-weight: bold;");
-        sysLayout->addWidget(m_stateValue, 2, 1);
+        m_stateLabel = new QLabel("--");
+        sysLayout->addWidget(m_stateLabel, 2, 1);
 
         sysLayout->addWidget(new QLabel("温度:"), 3, 0);
-        m_tempValue = new QLabel("-- ℃");
-        sysLayout->addWidget(m_tempValue, 3, 1);
+        m_tempLabel = new QLabel("-- ℃");
+        sysLayout->addWidget(m_tempLabel, 3, 1);
 
         sysLayout->addWidget(new QLabel("电压:"), 4, 0);
-        m_voltValue = new QLabel("-- V");
-        sysLayout->addWidget(m_voltValue, 4, 1);
+        m_voltLabel = new QLabel("-- V");
+        sysLayout->addWidget(m_voltLabel, 4, 1);
 
         sysLayout->addWidget(new QLabel("固件版本:"), 5, 0);
-        m_versionValue = new QLabel("--");
-        sysLayout->addWidget(m_versionValue, 5, 1);
+        m_versionLabel = new QLabel("--");
+        sysLayout->addWidget(m_versionLabel, 5, 1);
 
         sysLayout->addWidget(new QLabel("数据包数:"), 6, 0);
-        m_dataCountValue = new QLabel("0");
-        m_dataCountValue->setStyleSheet("font-weight: bold; color: #e74c3c;");
-        sysLayout->addWidget(m_dataCountValue, 6, 1);
+        m_dataCountLabel = new QLabel("0");
+        m_dataCountLabel->setStyleSheet("font-weight: bold; color: #ea4335;");
+        sysLayout->addWidget(m_dataCountLabel, 6, 1);
 
         midLayout->addWidget(sysGroup);
         midLayout->addStretch();
@@ -489,20 +410,13 @@ private:
         rightLayout->setSpacing(12);
 
         QGroupBox *windGroup = new QGroupBox("风场数据");
+        windGroup->setStyleSheet(connGroup->styleSheet());
         QVBoxLayout *windLayout = new QVBoxLayout(windGroup);
 
         // 平均风速
-        QWidget *avgWidget = new QWidget;
-        QHBoxLayout *avgLayout = new QHBoxLayout(avgWidget);
-        avgLayout->setContentsMargins(0, 0, 0, 0);
-        QLabel *avgLabel = new QLabel("平均风速:");
-        avgLabel->setStyleSheet("font-size: 14px;");
-        m_avgSpeedValue = new QLabel("-- m/s");
-        m_avgSpeedValue->setStyleSheet("font-size: 24px; font-weight: bold; color: #e74c3c;");
-        avgLayout->addWidget(avgLabel);
-        avgLayout->addStretch();
-        avgLayout->addWidget(m_avgSpeedValue);
-        windLayout->addWidget(avgWidget);
+        m_avgSpeedLabel = new QLabel("平均风速: -- m/s");
+        m_avgSpeedLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #ea4335; padding: 8px; background-color: #fce8e6; border-radius: 4px;");
+        windLayout->addWidget(m_avgSpeedLabel);
 
         // 风场表格
         m_windTable = new QTableWidget;
@@ -513,6 +427,7 @@ private:
         m_windTable->setEditTriggers(QTableWidget::NoEditTriggers);
         m_windTable->setSelectionBehavior(QTableWidget::SelectRows);
         m_windTable->verticalHeader()->setVisible(false);
+        m_windTable->setStyleSheet("QTableWidget { border: 1px solid #dcdde1; border-radius: 4px; gridline-color: #ecf0f1; background-color: white; alternate-background-color: #f8f9fa; } QTableWidget::item { padding: 6px; } QTableWidget::item:selected { background-color: #1a73e8; color: white; } QHeaderView::section { background-color: #34495e; color: white; padding: 8px; border: none; font-weight: bold; }");
         windLayout->addWidget(m_windTable);
 
         rightLayout->addWidget(windGroup);
@@ -524,10 +439,12 @@ private:
         QWidget *bottomWidget = new QWidget;
         QVBoxLayout *bottomLayout = new QVBoxLayout(bottomWidget);
         QGroupBox *logGroup = new QGroupBox("通信日志");
+        logGroup->setStyleSheet(connGroup->styleSheet());
         QVBoxLayout *logLayout = new QVBoxLayout(logGroup);
         m_logText = new QTextEdit;
         m_logText->setReadOnly(true);
         m_logText->setMaximumHeight(120);
+        m_logText->setStyleSheet("background-color: #2c3e50; color: #ecf0f1; font-family: Consolas; font-size: 12px; border: 1px solid #dcdde1; border-radius: 4px;");
         logLayout->addWidget(m_logText);
         bottomLayout->addWidget(logGroup);
         splitter->addWidget(bottomWidget);
@@ -538,6 +455,7 @@ private:
         // 状态栏
         m_statsLabel = new QLabel("TX: 0 KB/s | RX: 0 KB/s");
         statusBar()->addPermanentWidget(m_statsLabel);
+        statusBar()->setStyleSheet("background-color: #34495e; color: white;");
         statusBar()->showMessage("就绪 - 请连接雷达设备");
     }
 
@@ -578,13 +496,13 @@ private:
     QPushButton *m_statusBtn;
     QPushButton *m_versionBtn;
     QLabel *m_connStatusLabel;
-    QLabel *m_beamValue;
-    QLabel *m_stateValue;
-    QLabel *m_tempValue;
-    QLabel *m_voltValue;
-    QLabel *m_versionValue;
-    QLabel *m_dataCountValue;
-    QLabel *m_avgSpeedValue;
+    QLabel *m_beamLabel;
+    QLabel *m_stateLabel;
+    QLabel *m_tempLabel;
+    QLabel *m_voltLabel;
+    QLabel *m_versionLabel;
+    QLabel *m_dataCountLabel;
+    QLabel *m_avgSpeedLabel;
     QLabel *m_statsLabel;
     QTableWidget *m_windTable;
     QTextEdit *m_logText;

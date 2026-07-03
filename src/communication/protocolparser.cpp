@@ -97,10 +97,11 @@ bool ProtocolParser::parseFrame(const QByteArray& rawData, FrameHeader& header, 
                       static_cast<uint8_t>(frame[9]);
 
     // 提取数据载荷
-    int payloadLen = frameLen - FRAME_MIN_SIZE;
+    // 帧结构: 帧头(2) + 长度(2) + 命令(2) + 序列号(4) + 数据(N) + CRC(2) + 帧尾(2)
+    // payloadLen = 帧总长 - 帧头(2) - 长度(2) - 命令(2) - 序列号(4) - CRC(2) - 帧尾(2)
+    int payloadLen = frameLen - 14;
     if (payloadLen > 0) {
-        payload = frame.mid(FRAME_HEADER_SIZE + FRAME_LENGTH_SIZE +
-                           FRAME_CMD_SIZE + FRAME_SEQ_SIZE, payloadLen);
+        payload = frame.mid(10, payloadLen);  // 跳过前10字节(帧头+长度+命令+序列号)
     } else {
         payload.clear();
     }

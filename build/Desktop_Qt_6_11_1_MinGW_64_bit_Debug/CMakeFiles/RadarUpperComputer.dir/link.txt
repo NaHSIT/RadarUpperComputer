@@ -1,3 +1,0 @@
-E:\Qt\Tools\CMake_64\bin\cmake.exe -E rm -f CMakeFiles\RadarUpperComputer.dir/objects.a
-E:\Qt\Tools\mingw1310_64\bin\ar.exe qc CMakeFiles\RadarUpperComputer.dir/objects.a @CMakeFiles\RadarUpperComputer.dir\objects1.rsp
-E:\Qt\Tools\mingw1310_64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\RadarUpperComputer.dir/objects.a -Wl,--no-whole-archive -o RadarUpperComputer.exe -Wl,--out-implib,libRadarUpperComputer.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\RadarUpperComputer.dir\linkLibs.rsp

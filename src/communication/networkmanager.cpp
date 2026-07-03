@@ -331,9 +331,12 @@ void NetworkManager::onTcpReadyRead()
     QByteArray payload;
 
     while (m_parser->parseFrame(m_recvBuffer, header, payload)) {
-        // 帧总长 = 长度字段 + 4 (帧头2 + 长度字段2)
+        // 帧总长 = 帧头(2) + 长度字段(2) + 长度值 = length + 4 (服务端格式)
         int consumed = header.length + 4;
         m_recvBuffer.remove(0, consumed);
+
+        qDebug() << "帧解析成功:" << Qt::hex << header.command << "seq:" << header.sequence
+                 << "payload:" << Qt::dec << payload.size() << "bytes";
 
         // 发送帧接收信号
         emit frameReceived(header.command, header.sequence, payload);
@@ -382,7 +385,7 @@ void NetworkManager::onUdpReadyRead()
         m_recvBuffer.append(datagram);
 
         while (m_parser->parseFrame(m_recvBuffer, header, payload)) {
-            int consumed = header.length + FRAME_HEADER_SIZE + FRAME_TAIL_SIZE;
+            int consumed = header.length + 4;  // 帧头2 + 长度字段2 + 长度值(含帧尾)
             m_recvBuffer.remove(0, consumed);
         }
     }

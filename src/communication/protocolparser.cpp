@@ -66,6 +66,7 @@ bool ProtocolParser::parseFrame(const QByteArray& rawData, FrameHeader& header, 
 
     // 检查最小长度
     if (rawData.size() < FRAME_MIN_SIZE) {
+        qDebug() << "parseFrame: buffer too small" << rawData.size() << "<" << FRAME_MIN_SIZE;
         return false;
     }
 
@@ -73,8 +74,11 @@ bool ProtocolParser::parseFrame(const QByteArray& rawData, FrameHeader& header, 
     int startPos = 0;
     int frameLen = 0;
     if (!findFrameBoundary(rawData, startPos, frameLen)) {
+        qDebug() << "parseFrame: no frame boundary found, buffer size:" << rawData.size();
         return false;
     }
+
+    qDebug() << "parseFrame: frame found at" << startPos << "len:" << frameLen;
 
     // 提取帧数据
     QByteArray frame = rawData.mid(startPos, frameLen);
@@ -121,17 +125,26 @@ bool ProtocolParser::findFrameBoundary(const QByteArray& buffer, int& startPos, 
     while (startPos < buffer.size() - 3) {
         searchCount++;
 
-        // 查找帧头 0xAA55
-        if (buffer[startPos] == 0xAA && buffer[startPos + 1] == 0x55) {
+        // 查找帧头 0xAA55 (必须用 uint8_t 转换，因为 char 是有符号的)
+        if (static_cast<uint8_t>(buffer[startPos]) == 0xAA &&
+            static_cast<uint8_t>(buffer[startPos + 1]) == 0x55) {
             // 获取长度字段
             uint16_t length = (static_cast<uint8_t>(buffer[startPos + 2]) << 8) |
                               static_cast<uint8_t>(buffer[startPos + 3]);
 
             // 帧总长度 = 帧头(2) + 长度字段(2) + 长度字段的值
+            // 注意：服务端的长度字段 = 命令+序号+数据+CRC+帧尾，比客户端多2字节
             frameLen = length + 4;
+
+            qDebug() << "findFrameBoundary: found header at" << startPos
+                     << "length field =" << Qt::hex << length << Qt::dec
+                     << "frameLen =" << frameLen
+                     << "buffer size =" << buffer.size();
 
             // 检查是否有足够的数据
             if (startPos + frameLen > buffer.size()) {
+                qDebug() << "findFrameBoundary: not enough data, need" << frameLen
+                         << "have" << (buffer.size() - startPos);
                 return false;
             }
 

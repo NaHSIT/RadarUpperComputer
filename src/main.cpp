@@ -18,6 +18,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QFrame>
+#include <QDebug>
 
 #include "communication/networkmanager.h"
 #include "communication/frame.h"
@@ -128,6 +129,7 @@ private slots:
 
     void onFrameReceived(uint16_t command, uint32_t sequence, const QByteArray& payload)
     {
+        qDebug() << "onFrameReceived:" << Qt::hex << command << "payload:" << payload.size() << "bytes";
         switch (command) {
             case 0x0080:
                 m_logText->append("[RX] 确认响应");

@@ -116,8 +116,11 @@ bool ProtocolParser::parseFrame(const QByteArray& rawData, FrameHeader& header, 
 bool ProtocolParser::findFrameBoundary(const QByteArray& buffer, int& startPos, int& frameLen)
 {
     startPos = 0;
+    int searchCount = 0;
 
     while (startPos < buffer.size() - 3) {
+        searchCount++;
+
         // 查找帧头 0xAA55
         if (buffer[startPos] == 0xAA && buffer[startPos + 1] == 0x55) {
             // 获取长度字段
@@ -127,11 +130,8 @@ bool ProtocolParser::findFrameBoundary(const QByteArray& buffer, int& startPos, 
             // 帧总长度 = 帧头(2) + 长度字段(2) + 长度字段的值
             frameLen = length + 4;
 
-            qDebug() << "findFrame: 帧头位置=" << startPos << "长度字段=" << length << "帧总长=" << frameLen << "缓冲区=" << buffer.size();
-
             // 检查是否有足够的数据
             if (startPos + frameLen > buffer.size()) {
-                qDebug() << "findFrame: 数据不足";
                 return false;
             }
 

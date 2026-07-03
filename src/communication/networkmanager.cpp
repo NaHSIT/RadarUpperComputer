@@ -331,8 +331,8 @@ void NetworkManager::onTcpReadyRead()
     QByteArray payload;
 
     while (m_parser->parseFrame(m_recvBuffer, header, payload)) {
-        int consumed = header.length + FRAME_HEADER_SIZE + FRAME_TAIL_SIZE;
-        qDebug() << "解析帧: 命令=" << Qt::hex << header.command << "长度=" << consumed;
+        // 帧总长 = 长度字段 + 4 (帧头2 + 长度字段2)
+        int consumed = header.length + 4;
         m_recvBuffer.remove(0, consumed);
 
         // 发送帧接收信号

@@ -167,29 +167,29 @@ void MainWindow::onNavigationClicked(int pageIndex)
     navigateTo(pageIndex);
 }
 
-void MainWindow::onConnectionStateChanged(int state)
+void MainWindow::onConnectionStateChanged(ConnectionState state)
 {
     QString statusText;
     QString statusColor;
 
     switch (state) {
-    case 0: // Offline
+    case ConnectionState::Offline:
         statusText = "离线";
         statusColor = "gray";
         break;
-    case 1: // Connecting
+    case ConnectionState::Connecting:
         statusText = "连接中...";
         statusColor = "orange";
         break;
-    case 2: // Online
+    case ConnectionState::Online:
         statusText = "在线";
         statusColor = "green";
         break;
-    case 3: // DataTimeout
+    case ConnectionState::DataTimeout:
         statusText = "数据超时";
         statusColor = "red";
         break;
-    case 4: // ProtocolError
+    case ConnectionState::ProtocolError:
         statusText = "协议错误";
         statusColor = "red";
         break;

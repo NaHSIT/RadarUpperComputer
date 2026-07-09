@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QLabel>
+#include "domain/RadarTypes.h"
 
 class DeviceService;
 class AlarmService;
@@ -40,7 +41,7 @@ signals:
 
 private slots:
     void onNavigationClicked(int pageIndex);
-    void onConnectionStateChanged(int state);
+    void onConnectionStateChanged(ConnectionState state);
     void onAlarmCountChanged(int count);
 
 private:

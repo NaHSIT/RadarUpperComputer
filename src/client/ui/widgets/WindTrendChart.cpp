@@ -1,5 +1,6 @@
 #include "WindTrendChart.h"
 #include <QPainter>
+#include <QDateTime>
 
 WindTrendChart::WindTrendChart(QWidget *parent)
     : QWidget(parent)

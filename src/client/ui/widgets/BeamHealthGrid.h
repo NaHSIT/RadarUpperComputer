@@ -3,6 +3,9 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QPaintEvent>
+#include <QMouseEvent>
+#include <QPainter>
 
 class BeamHealthGrid : public QWidget
 {

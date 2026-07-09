@@ -57,7 +57,9 @@ private:
     void processMessage(const QString &message);
     void sendHeartbeat();
 
+#ifdef HAS_WEBSOCKETS
     QWebSocket *m_socket;
+#endif
     QTimer *m_reconnectTimer;
     QTimer *m_heartbeatTimer;
     bool m_reconnectEnabled;

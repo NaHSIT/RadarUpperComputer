@@ -13,9 +13,10 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # 查找 Qt 包
-find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
 
 # 可选组件
+find_package(Qt6 QUIET COMPONENTS WebSockets)
 find_package(Qt6 QUIET COMPONENTS Charts)
 find_package(Qt6 QUIET COMPONENTS SerialPort)
 

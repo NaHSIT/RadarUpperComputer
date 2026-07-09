@@ -1,6 +1,8 @@
 #include "WebSocketManager.h"
 #include <QJsonArray>
 
+#ifdef HAS_WEBSOCKETS
+
 WebSocketManager::WebSocketManager(QObject *parent)
     : QObject(parent)
     , m_socket(new QWebSocket(this))
@@ -199,3 +201,47 @@ void WebSocketManager::sendHeartbeat()
         sendMessage("ping", data);
     }
 }
+
+#else // HAS_WEBSOCKETS
+
+// 没有 WebSockets 模块时的空实现
+WebSocketManager::WebSocketManager(QObject *parent)
+    : QObject(parent)
+    , m_socket(nullptr)
+    , m_reconnectTimer(new QTimer(this))
+    , m_heartbeatTimer(new QTimer(this))
+    , m_reconnectEnabled(true)
+    , m_reconnectInterval(5000)
+    , m_heartbeatInterval(30000)
+{
+}
+
+WebSocketManager::~WebSocketManager() {}
+
+bool WebSocketManager::connectToServer(const QUrl &url, const QString &token)
+{
+    Q_UNUSED(url)
+    Q_UNUSED(token)
+    qWarning() << "WebSocketManager: WebSockets module not available";
+    return false;
+}
+
+void WebSocketManager::disconnectFromServer() {}
+bool WebSocketManager::isConnected() const { return false; }
+void WebSocketManager::sendMessage(const QString &event, const QJsonObject &data) { Q_UNUSED(event) Q_UNUSED(data) }
+void WebSocketManager::subscribe(const QString &event) { Q_UNUSED(event) }
+void WebSocketManager::unsubscribe(const QString &event) { Q_UNUSED(event) }
+void WebSocketManager::setReconnectEnabled(bool enabled) { m_reconnectEnabled = enabled; }
+void WebSocketManager::setReconnectInterval(int ms) { m_reconnectInterval = ms; }
+void WebSocketManager::setHeartbeatInterval(int ms) { m_heartbeatInterval = ms; }
+void WebSocketManager::onConnected() {}
+void WebSocketManager::onDisconnected() {}
+void WebSocketManager::onTextMessageReceived(const QString &message) { Q_UNUSED(message) }
+void WebSocketManager::onBinaryMessageReceived(const QByteArray &message) { Q_UNUSED(message) }
+void WebSocketManager::onError(QAbstractSocket::SocketError error) { Q_UNUSED(error) }
+void WebSocketManager::onReconnectTimer() {}
+void WebSocketManager::onHeartbeatTimer() {}
+void WebSocketManager::processMessage(const QString &message) { Q_UNUSED(message) }
+void WebSocketManager::sendHeartbeat() {}
+
+#endif // HAS_WEBSOCKETS

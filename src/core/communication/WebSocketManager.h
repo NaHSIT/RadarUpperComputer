@@ -2,10 +2,13 @@
 #define WEBSOCKETMANAGER_H
 
 #include <QObject>
-#include <QWebSocket>
 #include <QTimer>
 #include <QJsonObject>
 #include <QJsonDocument>
+
+#ifdef HAS_WEBSOCKETS
+#include <QWebSocket>
+#endif
 
 /**
  * @brief WebSocket 管理器

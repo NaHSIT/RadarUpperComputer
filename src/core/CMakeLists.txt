@@ -59,8 +59,13 @@ target_link_libraries(radar-core
     PUBLIC
         Qt6::Core
         Qt6::Network
-        Qt6::WebSockets
 )
+
+# 可选：WebSockets
+if(TARGET Qt6::WebSockets)
+    target_link_libraries(radar-core PUBLIC Qt6::WebSockets)
+    target_compile_definitions(radar-core PUBLIC HAS_WEBSOCKETS)
+endif()
 
 # 设置 C++ 标准
 set_target_properties(radar-core PROPERTIES

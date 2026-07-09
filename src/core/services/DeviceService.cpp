@@ -7,6 +7,7 @@ DeviceService::DeviceService(QObject *parent)
     , m_deviceInfo(new RadarDevice(this))
     , m_currentProfile(new WindProfile(this))
     , m_deviceHealth(new DeviceHealth(this))
+    , m_port(1000)  // 默认端口
 {
 }
 
@@ -27,6 +28,9 @@ bool DeviceService::connectDevice(const QString &ip, int port)
         emit errorOccurred("Invalid IP or port");
         return false;
     }
+
+    // 保存端口号用于重连
+    m_port = port;
 
     updateConnectionState(ConnectionState::Connecting);
     m_deviceInfo->setIpAddress(ip);
@@ -49,7 +53,7 @@ void DeviceService::disconnectDevice()
 bool DeviceService::reconnect()
 {
     if (m_connectionState == ConnectionState::Offline) {
-        return connectDevice(m_deviceInfo->ipAddress(), 1000);
+        return connectDevice(m_deviceInfo->ipAddress(), m_port);
     }
     return false;
 }

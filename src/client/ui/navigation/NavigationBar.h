@@ -34,6 +34,7 @@ signals:
 
 private slots:
     void onItemClicked(QListWidgetItem *item);
+    void onCurrentRowChanged(int row);
 
 private:
     void setupUI();

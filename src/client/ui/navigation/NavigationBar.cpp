@@ -1,6 +1,7 @@
 #include "NavigationBar.h"
 #include <QPainter>
 #include <QPainterPath>
+#include <QSize>
 
 NavigationBar::NavigationBar(QWidget *parent)
     : QWidget(parent)
@@ -28,7 +29,7 @@ void NavigationBar::addItem(const QString &icon, const QString &text, int pageIn
     QListWidgetItem *listItem = new QListWidgetItem(m_listWidget);
     listItem->setText(QString("  %1  %2").arg(icon, text));
     listItem->setData(Qt::UserRole, pageIndex);
-    listItem->setSizeHint(QHint(0, 45));
+    listItem->setSizeHint(QSize(0, 45));
 }
 
 void NavigationBar::setCurrentIndex(int index)
@@ -76,7 +77,7 @@ void NavigationBar::setupUI()
     );
 
     connect(m_listWidget, &QListWidget::currentRowChanged,
-            this, &NavigationBar::onItemClicked);
+            this, &NavigationBar::onCurrentRowChanged);
 
     m_layout->addWidget(m_listWidget);
 
@@ -98,6 +99,16 @@ void NavigationBar::onItemClicked(QListWidgetItem *item)
     emit itemClicked(pageIndex);
     if (oldIndex != m_currentIndex) {
         emit itemChanged(oldIndex, m_currentIndex);
+    }
+}
+
+void NavigationBar::onCurrentRowChanged(int row)
+{
+    if (row >= 0 && row < m_listWidget->count()) {
+        QListWidgetItem *item = m_listWidget->item(row);
+        if (item) {
+            onItemClicked(item);
+        }
     }
 }
 

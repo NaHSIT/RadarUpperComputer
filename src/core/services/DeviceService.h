@@ -57,6 +57,7 @@ private:
     RadarDevice *m_deviceInfo;
     WindProfile *m_currentProfile;
     DeviceHealth *m_deviceHealth;
+    int m_port;  // 保存端口号用于重连
 };
 
 #endif // DEVICESERVICE_H

@@ -158,6 +158,21 @@ void MainWindow::createPages()
     m_settingsPage = new SettingsPage(this);
     m_contentStack->addWidget(m_settingsPage);
 
+    // 连接设置页信号
+    connect(m_settingsPage, &SettingsPage::connectRequested,
+            this, [this](const QString &ip, int port) {
+                if (m_deviceService) {
+                    m_deviceService->connectDevice(ip, port);
+                }
+            });
+
+    connect(m_settingsPage, &SettingsPage::disconnectRequested,
+            this, [this]() {
+                if (m_deviceService) {
+                    m_deviceService->disconnectDevice();
+                }
+            });
+
     // 默认显示总览页
     m_contentStack->setCurrentIndex(0);
 }

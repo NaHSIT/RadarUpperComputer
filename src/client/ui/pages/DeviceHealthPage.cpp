@@ -127,22 +127,22 @@ void DeviceHealthPage::createDeviceInfoSection()
     QGroupBox *group = new QGroupBox("设备信息", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QGridLayout *layout = new QGridLayout(group);
+    QGridLayout *gridLayout = new QGridLayout(group);
 
     m_deviceIdLabel = new QLabel("--", group);
     m_modelLabel = new QLabel("--", group);
     m_firmwareLabel = new QLabel("--", group);
     m_ipLabel = new QLabel("--", group);
 
-    layout->addWidget(new QLabel("设备编号:", group), 0, 0);
-    layout->addWidget(m_deviceIdLabel, 0, 1);
-    layout->addWidget(new QLabel("型号:", group), 0, 2);
-    layout->addWidget(m_modelLabel, 0, 3);
+    gridLayout->addWidget(new QLabel("设备编号:", group), 0, 0);
+    gridLayout->addWidget(m_deviceIdLabel, 0, 1);
+    gridLayout->addWidget(new QLabel("型号:", group), 0, 2);
+    gridLayout->addWidget(m_modelLabel, 0, 3);
 
-    layout->addWidget(new QLabel("固件版本:", group), 1, 0);
-    layout->addWidget(m_firmwareLabel, 1, 1);
-    layout->addWidget(new QLabel("IP 地址:", group), 1, 2);
-    layout->addWidget(m_ipLabel, 1, 3);
+    gridLayout->addWidget(new QLabel("固件版本:", group), 1, 0);
+    gridLayout->addWidget(m_firmwareLabel, 1, 1);
+    gridLayout->addWidget(new QLabel("IP 地址:", group), 1, 2);
+    gridLayout->addWidget(m_ipLabel, 1, 3);
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
@@ -155,17 +155,17 @@ void DeviceHealthPage::createTemperatureSection()
     QGroupBox *group = new QGroupBox("温控状态", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QHBoxLayout *layout = new QHBoxLayout(group);
+    QHBoxLayout *hLayout = new QHBoxLayout(group);
 
     m_cpuTempCard = new MetricCard(group);
     m_cpuTempCard->setData("CPU 温度", 0.0, "°C");
-    layout->addWidget(m_cpuTempCard);
+    hLayout->addWidget(m_cpuTempCard);
 
     m_fpgaTempCard = new MetricCard(group);
     m_fpgaTempCard->setData("FPGA 温度", 0.0, "°C");
-    layout->addWidget(m_fpgaTempCard);
+    hLayout->addWidget(m_fpgaTempCard);
 
-    layout->addStretch();
+    hLayout->addStretch();
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
@@ -178,17 +178,17 @@ void DeviceHealthPage::createPowerSection()
     QGroupBox *group = new QGroupBox("电源状态", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QHBoxLayout *layout = new QHBoxLayout(group);
+    QHBoxLayout *hLayout = new QHBoxLayout(group);
 
     m_ohVoltageCard = new MetricCard(group);
     m_ohVoltageCard->setData("OH 电压", 0.0, "V");
-    layout->addWidget(m_ohVoltageCard);
+    hLayout->addWidget(m_ohVoltageCard);
 
     m_ohCurrentCard = new MetricCard(group);
     m_ohCurrentCard->setData("OH 电流", 0.0, "A");
-    layout->addWidget(m_ohCurrentCard);
+    hLayout->addWidget(m_ohCurrentCard);
 
-    layout->addStretch();
+    hLayout->addStretch();
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
@@ -201,17 +201,17 @@ void DeviceHealthPage::createAttitudeSection()
     QGroupBox *group = new QGroupBox("姿态状态", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QHBoxLayout *layout = new QHBoxLayout(group);
+    QHBoxLayout *hLayout = new QHBoxLayout(group);
 
     m_rollCard = new MetricCard(group);
     m_rollCard->setData("Roll", 0.0, "°");
-    layout->addWidget(m_rollCard);
+    hLayout->addWidget(m_rollCard);
 
     m_tiltCard = new MetricCard(group);
     m_tiltCard->setData("Tilt", 0.0, "°");
-    layout->addWidget(m_tiltCard);
+    hLayout->addWidget(m_tiltCard);
 
-    layout->addStretch();
+    hLayout->addStretch();
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
@@ -224,13 +224,13 @@ void DeviceHealthPage::createStorageSection()
     QGroupBox *group = new QGroupBox("存储状态", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QHBoxLayout *layout = new QHBoxLayout(group);
+    QHBoxLayout *hLayout = new QHBoxLayout(group);
 
     m_storageCard = new MetricCard(group);
     m_storageCard->setData("存储使用率", 0.0, "%");
-    layout->addWidget(m_storageCard);
+    hLayout->addWidget(m_storageCard);
 
-    layout->addStretch();
+    hLayout->addStretch();
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
@@ -243,15 +243,15 @@ void DeviceHealthPage::createTimeSyncSection()
     QGroupBox *group = new QGroupBox("时间同步", this);
     group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
 
-    QGridLayout *layout = new QGridLayout(group);
+    QGridLayout *gridLayout = new QGridLayout(group);
 
     m_timeSyncLabel = new QLabel("--", group);
     m_timeOffsetLabel = new QLabel("--", group);
 
-    layout->addWidget(new QLabel("同步状态:", group), 0, 0);
-    layout->addWidget(m_timeSyncLabel, 0, 1);
-    layout->addWidget(new QLabel("时间偏差:", group), 0, 2);
-    layout->addWidget(m_timeOffsetLabel, 0, 3);
+    gridLayout->addWidget(new QLabel("同步状态:", group), 0, 0);
+    gridLayout->addWidget(m_timeSyncLabel, 0, 1);
+    gridLayout->addWidget(new QLabel("时间偏差:", group), 0, 2);
+    gridLayout->addWidget(m_timeOffsetLabel, 0, 3);
 
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {

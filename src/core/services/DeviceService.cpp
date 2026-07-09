@@ -1,4 +1,5 @@
 #include "DeviceService.h"
+#include <QDebug>
 
 DeviceService::DeviceService(QObject *parent)
     : QObject(parent)
@@ -17,15 +18,26 @@ DeviceService::~DeviceService()
 bool DeviceService::connectDevice(const QString &ip, int port)
 {
     if (m_connectionState == ConnectionState::Connecting) {
+        qWarning() << "DeviceService: Already connecting";
+        return false;
+    }
+
+    if (ip.isEmpty() || port <= 0) {
+        qWarning() << "DeviceService: Invalid IP or port";
+        emit errorOccurred("Invalid IP or port");
         return false;
     }
 
     updateConnectionState(ConnectionState::Connecting);
+    m_deviceInfo->setIpAddress(ip);
 
     // TODO: 使用 TcpDataSource 连接设备
     // m_dataSource->connectToHost(ip, port);
 
-    return true;
+    qWarning() << "DeviceService: connectDevice() not implemented yet";
+    updateConnectionState(ConnectionState::Offline);
+    emit errorOccurred("connectDevice() not implemented yet");
+    return false;
 }
 
 void DeviceService::disconnectDevice()
@@ -46,6 +58,7 @@ QVariantMap DeviceService::getParameters() const
 {
     QVariantMap params;
     // TODO: 从设备读取参数
+    qWarning() << "DeviceService: getParameters() not implemented yet";
     return params;
 }
 
@@ -56,12 +69,15 @@ bool DeviceService::setParameters(const QVariantMap &params)
     }
 
     // TODO: 向设备写入参数
-    return true;
+    qWarning() << "DeviceService: setParameters() not implemented yet";
+    emit errorOccurred("setParameters() not implemented yet");
+    return false;
 }
 
 bool DeviceService::validateParameters(const QVariantMap &params) const
 {
     // TODO: 参数校验
+    Q_UNUSED(params)
     return true;
 }
 

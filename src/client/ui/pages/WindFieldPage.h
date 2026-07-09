@@ -4,9 +4,13 @@
 #include <QWidget>
 #include <QComboBox>
 #include <QTableWidget>
+#include <QVector>
 
+// 包含头文件（因为使用了嵌套类型）
+#include "widgets/RangeGateTable.h"
+
+// 前向声明
 class WindTrendChart;
-class RangeGateTable;
 
 /**
  * @brief 风场页面

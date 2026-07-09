@@ -59,6 +59,7 @@ target_link_libraries(radar-core
     PUBLIC
         Qt6::Core
         Qt6::Network
+        Qt6::WebSockets
 )
 
 # 设置 C++ 标准

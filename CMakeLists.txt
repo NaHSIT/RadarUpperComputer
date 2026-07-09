@@ -1,64 +1,53 @@
-cmake_minimum_required(VERSION 3.20)
-project(RadarUpperComputer VERSION 1.0 LANGUAGES CXX)
+# 顶层 CMakeLists.txt
 
+cmake_minimum_required(VERSION 3.20)
+project(RadarUpperComputer VERSION 1.0.0 LANGUAGES CXX)
+
+# 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Qt设置
+# Qt 设置
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# 查找Qt包 (基础组件)
-find_package(Qt6 REQUIRED COMPONENTS
-    Core
-    Gui
-    Widgets
-    Network
-)
+# 查找 Qt 包
+find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets WebSockets)
 
-# 可选组件 (稍后安装)
-find_package(Qt6 QUIET COMPONENTS SerialPort)
+# 可选组件
 find_package(Qt6 QUIET COMPONENTS Charts)
+find_package(Qt6 QUIET COMPONENTS SerialPort)
 
-# 头文件目录
-include_directories(
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/communication
-)
+# 输出项目信息
+message(STATUS "=====================================")
+message(STATUS "Project: ${PROJECT_NAME}")
+message(STATUS "Version: ${PROJECT_VERSION}")
+message(STATUS "=====================================")
 
-# 源文件
-set(SOURCES
-    src/main.cpp
-    src/communication/protocolparser.cpp
-    src/communication/networkmanager.cpp
-)
+# 共享核心库
+add_subdirectory(src/core)
 
-# 头文件
-set(HEADERS
-    src/communication/frame.h
-    src/communication/protocolparser.h
-    src/communication/networkmanager.h
-)
-
-# 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-
-# 链接Qt库 (基础)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Widgets
-    Qt6::Network
-)
-
-# 链接可选库
-if(Qt6SerialPort_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::SerialPort)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAS_SERIAL_PORT)
+# 桌面客户端
+option(BUILD_CLIENT "Build desktop client" ON)
+if(BUILD_CLIENT)
+    message(STATUS "Building: Desktop Client")
+    add_subdirectory(src/client)
 endif()
 
-if(Qt6Charts_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Charts)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAS_CHARTS)
+# 雷达端 Web 服务
+option(BUILD_RADAR_WEB "Build radar web server" OFF)
+if(BUILD_RADAR_WEB)
+    message(STATUS "Building: Radar Web Server")
+    add_subdirectory(src/radar-web/server)
 endif()
+
+# 测试
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    message(STATUS "Building: Tests")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+message(STATUS "=====================================")

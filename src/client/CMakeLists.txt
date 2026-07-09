@@ -17,12 +17,10 @@ set(CLIENT_SOURCES
     ui/widgets/BeamHealthGrid.cpp
     ui/widgets/AlarmList.cpp
     ui/widgets/RangeGateTable.cpp
-    viewmodels/DashboardViewModel.cpp
 )
 
 set(CLIENT_HEADERS
     app/ClientApp.h
-    app/AppContext.h
     ui/MainWindow.h
     ui/navigation/NavigationBar.h
     ui/pages/DashboardPage.h
@@ -37,7 +35,6 @@ set(CLIENT_HEADERS
     ui/widgets/BeamHealthGrid.h
     ui/widgets/AlarmList.h
     ui/widgets/RangeGateTable.h
-    viewmodels/DashboardViewModel.h
 )
 
 # 创建可执行文件

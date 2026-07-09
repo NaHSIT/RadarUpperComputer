@@ -144,7 +144,7 @@ void DeviceHealthPage::createDeviceInfoSection()
     layout->addWidget(new QLabel("IP 地址:", group), 1, 2);
     layout->addWidget(m_ipLabel, 1, 3);
 
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
     if (mainLayout) {
         mainLayout->addWidget(group);
     }

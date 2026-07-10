@@ -1,65 +1,40 @@
 #include "RangeGateTable.h"
-#include <QVBoxLayout>
+
 #include <QHeaderView>
+#include <QLabel>
+#include <QTableWidgetItem>
+#include <QVBoxLayout>
 
-RangeGateTable::RangeGateTable(QWidget *parent)
-    : QWidget(parent)
-    , m_table(nullptr)
-{
-    setupUI();
-}
-
-RangeGateTable::~RangeGateTable()
-{
-}
-
-void RangeGateTable::setGateData(const QVector<GateData> &data)
-{
-    m_gateData = data;
-    updateTable();
-}
-
-void RangeGateTable::clear()
-{
-    m_gateData.clear();
-    updateTable();
-}
+RangeGateTable::RangeGateTable(QWidget *parent) : QWidget(parent), m_table(nullptr) { setupUI(); }
+RangeGateTable::~RangeGateTable() = default;
+void RangeGateTable::setGateData(const QVector<GateData> &data) { m_gateData = data; updateTable(); }
+void RangeGateTable::clear() { m_gateData.clear(); updateTable(); }
 
 void RangeGateTable::setupUI()
 {
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-
-    QLabel *titleLabel = new QLabel("分层风场数据", this);
-    titleLabel->setStyleSheet("color: #333; font-size: 12px; font-weight: bold; padding: 5px;");
-    layout->addWidget(titleLabel);
-
-    m_table = new QTableWidget(this);
-    m_table->setColumnCount(8);
-    m_table->setHorizontalHeaderLabels({
-        "层号", "距离(m)", "高度(m)", "风速(m/s)", "风向(°)",
-        "CNR(dB)", "置信度", "状态"
-    });
-    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Stretch);
-    m_table->verticalHeader()->hide();
-    m_table->setEditTriggers(QTableWidget::NoEditTriggers);
-    m_table->setSelectionBehavior(QTableWidget::SelectRows);
-    m_table->setSortingEnabled(true);
-
-    connect(m_table, &QTableWidget::cellClicked, this, &RangeGateTable::onItemClicked);
-
-    layout->addWidget(m_table);
+    auto *layout = new QVBoxLayout(this); layout->setContentsMargins(0, 0, 0, 0); layout->setSpacing(0);
+    auto *title = new QLabel(QStringLiteral("分层风场数据"), this);
+    title->setStyleSheet("color:#263442; font-size:14px; font-weight:600; padding:0 0 8px;"); layout->addWidget(title);
+    m_table = new QTableWidget(this); m_table->setColumnCount(8);
+    m_table->setHorizontalHeaderLabels({QStringLiteral("层号"), QStringLiteral("距离 (m)"), QStringLiteral("高度 (m)"), QStringLiteral("风速 (m/s)"), QStringLiteral("风向 (°)"), QStringLiteral("CNR (dB)"), QStringLiteral("置信度 (%)"), QStringLiteral("状态")});
+    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); m_table->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Stretch);
+    m_table->verticalHeader()->hide(); m_table->setEditTriggers(QTableWidget::NoEditTriggers); m_table->setSelectionBehavior(QTableWidget::SelectRows);
+    m_table->setSortingEnabled(true); m_table->setShowGrid(false); m_table->setAlternatingRowColors(true);
+    m_table->setStyleSheet(
+        "QTableWidget { background:#fff; border:1px solid #d9dee5; border-radius:2px; font-size:12px; }"
+        "QTableWidget::item { padding:6px 9px; border-bottom:1px solid #edf0f2; }"
+        "QTableWidget::item:selected { background:#eaf1f6; color:#182230; }"
+        "QTableWidget::item:alternate { background:#f8fafb; }"
+        "QHeaderView::section { background:#f2f5f7; color:#52606d; font-weight:600; font-size:12px; padding:7px 9px; border:0; border-bottom:1px solid #d9dee5; }"
+    );
+    connect(m_table, &QTableWidget::cellClicked, this, &RangeGateTable::onItemClicked); layout->addWidget(m_table);
 }
 
 void RangeGateTable::updateTable()
 {
-    m_table->setRowCount(0);
-
+    m_table->setSortingEnabled(false); m_table->setRowCount(0);
     for (const auto &gate : m_gateData) {
-        int row = m_table->rowCount();
-        m_table->insertRow(row);
-
+        const int row = m_table->rowCount(); m_table->insertRow(row);
         m_table->setItem(row, 0, new QTableWidgetItem(QString::number(gate.gateIndex)));
         m_table->setItem(row, 1, new QTableWidgetItem(QString::number(gate.distanceM, 'f', 0)));
         m_table->setItem(row, 2, new QTableWidgetItem(QString::number(gate.heightM, 'f', 0)));
@@ -67,15 +42,17 @@ void RangeGateTable::updateTable()
         m_table->setItem(row, 4, new QTableWidgetItem(QString::number(gate.windDirectionDeg, 'f', 1)));
         m_table->setItem(row, 5, new QTableWidgetItem(QString::number(gate.cnrAvg, 'f', 1)));
         m_table->setItem(row, 6, new QTableWidgetItem(QString::number(gate.confidence, 'f', 0)));
-        m_table->setItem(row, 7, new QTableWidgetItem(gate.status));
+        auto *status = new QTableWidgetItem(gate.status);
+        if (gate.status == QStringLiteral("正常") || gate.status == "Valid") status->setForeground(QColor("#16713b"));
+        else if (gate.status == QStringLiteral("低信噪比") || gate.status == "Low SNR") status->setForeground(QColor("#9a6700"));
+        else status->setForeground(QColor("#b42318"));
+        m_table->setItem(row, 7, status);
     }
+    m_table->setSortingEnabled(true);
 }
 
 void RangeGateTable::onItemClicked(int row, int column)
 {
     Q_UNUSED(column)
-
-    if (row >= 0 && row < m_gateData.size()) {
-        emit gateClicked(m_gateData[row].gateIndex);
-    }
+    if (row >= 0 && row < m_gateData.size()) emit gateClicked(m_gateData[row].gateIndex);
 }

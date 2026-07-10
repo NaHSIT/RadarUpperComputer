@@ -2,16 +2,15 @@
 #define DEVICESERVICE_H
 
 #include <QObject>
+#include <QVariantMap>
+#include <QByteArray>
+#include <QString>
+
 #include "domain/RadarTypes.h"
 #include "domain/RadarDevice.h"
 #include "domain/WindProfile.h"
 #include "domain/DeviceHealth.h"
 
-/**
- * @brief 设备管理服务
- *
- * 负责设备连接、数据接收和状态管理
- */
 class DeviceService : public QObject
 {
     Q_OBJECT
@@ -22,22 +21,19 @@ public:
     explicit DeviceService(QObject *parent = nullptr);
     ~DeviceService() override;
 
-    // 连接管理
     Q_INVOKABLE bool connectDevice(const QString &ip, int port);
     Q_INVOKABLE void disconnectDevice();
     Q_INVOKABLE bool reconnect();
 
-    // 状态查询
     ConnectionState connectionState() const { return m_connectionState; }
     bool isConnected() const { return m_connectionState == ConnectionState::Online; }
-    RadarDevice* deviceInfo() const { return m_deviceInfo; }
-    WindProfile* currentWindProfile() const { return m_currentProfile; }
-    DeviceHealth* deviceHealth() const { return m_deviceHealth; }
+    RadarDevice *deviceInfo() const { return m_deviceInfo; }
+    WindProfile *currentWindProfile() const { return m_currentProfile; }
+    DeviceHealth *deviceHealth() const { return m_deviceHealth; }
 
-    // 参数管理
     Q_INVOKABLE QVariantMap getParameters() const;
     Q_INVOKABLE bool setParameters(const QVariantMap &params);
-    Q_INVOKABLE bool validateParameters(const QVariantMap &params);
+    Q_INVOKABLE bool validateParameters(const QVariantMap &params) const;
 
 signals:
     void connectionStateChanged(ConnectionState state);
@@ -57,7 +53,8 @@ private:
     RadarDevice *m_deviceInfo;
     WindProfile *m_currentProfile;
     DeviceHealth *m_deviceHealth;
-    int m_port;  // 保存端口号用于重连
+    class TcpDataSource *m_dataSource;
+    int m_port;
 };
 
 #endif // DEVICESERVICE_H

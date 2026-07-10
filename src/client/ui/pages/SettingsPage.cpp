@@ -1,10 +1,42 @@
 #include "SettingsPage.h"
-#include <QVBoxLayout>
+
+#include <QFileDialog>
+#include <QFormLayout>
+#include <QFrame>
 #include <QHBoxLayout>
-#include <QGroupBox>
-#include <QGridLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QSettings>
+#include <QVBoxLayout>
+
+namespace {
+QFrame *createSection(const QString &title, QWidget *parent)
+{
+    auto *section = new QFrame(parent);
+    section->setObjectName("settingsSection");
+    section->setStyleSheet("QFrame#settingsSection { background:#ffffff; border:1px solid #d9dee5; border-radius:4px; }");
+    auto *layout = new QVBoxLayout(section);
+    layout->setContentsMargins(18, 14, 18, 16);
+    layout->setSpacing(12);
+    auto *heading = new QLabel(title, section);
+    heading->setStyleSheet("color:#263442; font-size:14px; font-weight:600;");
+    layout->addWidget(heading);
+    return section;
+}
+
+const char *kInputStyle =
+    "QLineEdit, QSpinBox, QComboBox { min-height:30px; padding:0 8px; background:#ffffff; border:1px solid #bfc9d4; border-radius:3px; font-size:13px; }"
+    "QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border-color:#2f6f9f; }";
+
+const char *kPrimaryButtonStyle =
+    "QPushButton { background:#2f6f9f; color:#ffffff; border:0; border-radius:3px; padding:7px 18px; font-weight:600; }"
+    "QPushButton:hover { background:#255c85; }"
+    "QPushButton:disabled { background:#a9bac8; }";
+
+const char *kSecondaryButtonStyle =
+    "QPushButton { background:#ffffff; color:#344054; border:1px solid #bfc9d4; border-radius:3px; padding:7px 18px; }"
+    "QPushButton:hover { background:#f2f5f7; }";
+}
 
 SettingsPage::SettingsPage(QWidget *parent)
     : QWidget(parent)
@@ -16,6 +48,7 @@ SettingsPage::SettingsPage(QWidget *parent)
     , m_languageCombo(nullptr)
     , m_refreshRateSpinBox(nullptr)
     , m_exportPathEdit(nullptr)
+    , m_browseExportPathBtn(nullptr)
     , m_exportFormatCombo(nullptr)
     , m_autoExportCheckBox(nullptr)
     , m_saveBtn(nullptr)
@@ -25,24 +58,16 @@ SettingsPage::SettingsPage(QWidget *parent)
     loadSettings();
 }
 
-SettingsPage::~SettingsPage()
-{
-}
+SettingsPage::~SettingsPage() = default;
 
 void SettingsPage::loadSettings()
 {
     QSettings settings;
-
-    // 连接配置
     m_ipEdit->setText(settings.value("connection/ip", "192.168.100.2").toString());
     m_portSpinBox->setValue(settings.value("connection/port", 1000).toInt());
-
-    // 显示设置
-    m_themeCombo->setCurrentText(settings.value("display/theme", "浅色").toString());
-    m_languageCombo->setCurrentText(settings.value("display/language", "中文").toString());
+    m_themeCombo->setCurrentText(settings.value("display/theme", QStringLiteral("标准浅色")).toString());
+    m_languageCombo->setCurrentText(settings.value("display/language", QStringLiteral("中文")).toString());
     m_refreshRateSpinBox->setValue(settings.value("display/refreshRate", 1).toInt());
-
-    // 导出设置
     m_exportPathEdit->setText(settings.value("export/path", "").toString());
     m_exportFormatCombo->setCurrentText(settings.value("export/format", "CSV").toString());
     m_autoExportCheckBox->setChecked(settings.value("export/autoExport", false).toBool());
@@ -51,200 +76,147 @@ void SettingsPage::loadSettings()
 void SettingsPage::saveSettings()
 {
     QSettings settings;
-
-    // 连接配置
-    settings.setValue("connection/ip", m_ipEdit->text());
+    settings.setValue("connection/ip", m_ipEdit->text().trimmed());
     settings.setValue("connection/port", m_portSpinBox->value());
-
-    // 显示设置
     settings.setValue("display/theme", m_themeCombo->currentText());
     settings.setValue("display/language", m_languageCombo->currentText());
     settings.setValue("display/refreshRate", m_refreshRateSpinBox->value());
-
-    // 导出设置
-    settings.setValue("export/path", m_exportPathEdit->text());
+    settings.setValue("export/path", m_exportPathEdit->text().trimmed());
     settings.setValue("export/format", m_exportFormatCombo->currentText());
     settings.setValue("export/autoExport", m_autoExportCheckBox->isChecked());
-
     settings.sync();
     emit settingsChanged();
 }
 
 void SettingsPage::onConnectClicked()
 {
-    QString ip = m_ipEdit->text();
-    int port = m_portSpinBox->value();
-    emit connectRequested(ip, port);
+    const QString ip = m_ipEdit->text().trimmed();
+    if (ip.isEmpty()) {
+        QMessageBox::warning(this, QStringLiteral("连接设备"), QStringLiteral("请输入雷达设备 IP 地址。"));
+        m_ipEdit->setFocus();
+        return;
+    }
+    saveSettings();
+    emit connectRequested(ip, m_portSpinBox->value());
 }
 
-void SettingsPage::onDisconnectClicked()
-{
-    emit disconnectRequested();
-}
+void SettingsPage::onDisconnectClicked() { emit disconnectRequested(); }
 
 void SettingsPage::onSaveClicked()
 {
     saveSettings();
+    QMessageBox::information(this, QStringLiteral("系统配置"), QStringLiteral("配置已保存。"));
 }
 
 void SettingsPage::onResetClicked()
 {
-    // 重置为默认值
     m_ipEdit->setText("192.168.100.2");
     m_portSpinBox->setValue(1000);
-    m_themeCombo->setCurrentText("浅色");
-    m_languageCombo->setCurrentText("中文");
+    m_themeCombo->setCurrentText(QStringLiteral("标准浅色"));
+    m_languageCombo->setCurrentText(QStringLiteral("中文"));
     m_refreshRateSpinBox->setValue(1);
-    m_exportPathEdit->setText("");
+    m_exportPathEdit->clear();
     m_exportFormatCombo->setCurrentText("CSV");
     m_autoExportCheckBox->setChecked(false);
 }
 
+void SettingsPage::onBrowseExportPathClicked()
+{
+    const QString selectedPath = QFileDialog::getExistingDirectory(
+        this, QStringLiteral("选择数据导出目录"), m_exportPathEdit->text());
+    if (!selectedPath.isEmpty()) m_exportPathEdit->setText(selectedPath);
+}
+
 void SettingsPage::setupUI()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-    mainLayout->setSpacing(16);
-
-    // 页面标题
-    QLabel *titleLabel = new QLabel("设置", this);
-    titleLabel->setStyleSheet("color: #333; font-size: 18px; font-weight: bold;");
-    mainLayout->addWidget(titleLabel);
-
-    // 连接配置
+    auto *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(24, 20, 24, 18);
+    mainLayout->setSpacing(14);
+    auto *title = new QLabel(QStringLiteral("系统配置"), this);
+    title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;");
+    auto *subtitle = new QLabel(QStringLiteral("配置雷达连接、数据刷新与导出规则。连接参数在保存后立即用于下一次连接。"), this);
+    subtitle->setStyleSheet("color:#667085; font-size:12px;");
+    subtitle->setWordWrap(true);
+    mainLayout->addWidget(title);
+    mainLayout->addWidget(subtitle);
     createConnectionSection();
-
-    // 显示设置
     createDisplaySection();
-
-    // 导出设置
     createExportSection();
-
-    // 按钮
     createButtons();
-
     mainLayout->addStretch();
 }
 
 void SettingsPage::createConnectionSection()
 {
-    QGroupBox *group = new QGroupBox("连接配置", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QGridLayout *layout = new QGridLayout(group);
-
-    // IP 地址
-    layout->addWidget(new QLabel("IP 地址:", group), 0, 0);
-    m_ipEdit = new QLineEdit(group);
+    auto *section = createSection(QStringLiteral("雷达连接"), this);
+    auto *form = new QFormLayout();
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    form->setHorizontalSpacing(18);
+    form->setVerticalSpacing(10);
+    m_ipEdit = new QLineEdit(section);
     m_ipEdit->setPlaceholderText("192.168.100.2");
-    layout->addWidget(m_ipEdit, 0, 1);
-
-    // 端口
-    layout->addWidget(new QLabel("端口:", group), 0, 2);
-    m_portSpinBox = new QSpinBox(group);
+    m_ipEdit->setStyleSheet(kInputStyle);
+    m_portSpinBox = new QSpinBox(section);
     m_portSpinBox->setRange(1, 65535);
-    m_portSpinBox->setValue(1000);
-    layout->addWidget(m_portSpinBox, 0, 3);
-
-    // 连接按钮
-    m_connectBtn = new QPushButton("连接", group);
-    m_connectBtn->setStyleSheet("QPushButton { background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; } QPushButton:hover { background: #45a049; }");
+    m_portSpinBox->setStyleSheet(kInputStyle);
+    form->addRow(QStringLiteral("设备 IP 地址："), m_ipEdit);
+    form->addRow(QStringLiteral("TCP 端口："), m_portSpinBox);
+    static_cast<QVBoxLayout *>(section->layout())->addLayout(form);
+    auto *buttons = new QHBoxLayout();
+    m_connectBtn = new QPushButton(QStringLiteral("连接设备"), section);
+    m_connectBtn->setStyleSheet(kPrimaryButtonStyle);
+    m_disconnectBtn = new QPushButton(QStringLiteral("断开连接"), section);
+    m_disconnectBtn->setStyleSheet(kSecondaryButtonStyle);
     connect(m_connectBtn, &QPushButton::clicked, this, &SettingsPage::onConnectClicked);
-    layout->addWidget(m_connectBtn, 1, 0, 1, 2);
-
-    // 断开按钮
-    m_disconnectBtn = new QPushButton("断开", group);
-    m_disconnectBtn->setStyleSheet("QPushButton { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; } QPushButton:hover { background: #da190b; }");
     connect(m_disconnectBtn, &QPushButton::clicked, this, &SettingsPage::onDisconnectClicked);
-    layout->addWidget(m_disconnectBtn, 1, 2, 1, 2);
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    buttons->addWidget(m_connectBtn); buttons->addWidget(m_disconnectBtn); buttons->addStretch();
+    static_cast<QVBoxLayout *>(section->layout())->addLayout(buttons);
+    static_cast<QVBoxLayout *>(layout())->addWidget(section);
 }
 
 void SettingsPage::createDisplaySection()
 {
-    QGroupBox *group = new QGroupBox("显示设置", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QGridLayout *layout = new QGridLayout(group);
-
-    // 主题
-    layout->addWidget(new QLabel("主题:", group), 0, 0);
-    m_themeCombo = new QComboBox(group);
-    m_themeCombo->addItems({"浅色", "深色", "高对比"});
-    layout->addWidget(m_themeCombo, 0, 1);
-
-    // 语言
-    layout->addWidget(new QLabel("语言:", group), 0, 2);
-    m_languageCombo = new QComboBox(group);
-    m_languageCombo->addItems({"中文", "English"});
-    layout->addWidget(m_languageCombo, 0, 3);
-
-    // 刷新率
-    layout->addWidget(new QLabel("刷新率:", group), 1, 0);
-    m_refreshRateSpinBox = new QSpinBox(group);
-    m_refreshRateSpinBox->setRange(1, 10);
-    m_refreshRateSpinBox->setValue(1);
-    m_refreshRateSpinBox->setSuffix(" 秒");
-    layout->addWidget(m_refreshRateSpinBox, 1, 1);
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *section = createSection(QStringLiteral("显示与刷新"), this);
+    auto *form = new QFormLayout();
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    form->setHorizontalSpacing(18); form->setVerticalSpacing(10);
+    m_themeCombo = new QComboBox(section); m_themeCombo->addItems({QStringLiteral("标准浅色"), QStringLiteral("高对比度")}); m_themeCombo->setStyleSheet(kInputStyle);
+    m_languageCombo = new QComboBox(section); m_languageCombo->addItems({QStringLiteral("中文"), "English"}); m_languageCombo->setStyleSheet(kInputStyle);
+    m_refreshRateSpinBox = new QSpinBox(section); m_refreshRateSpinBox->setRange(1, 10); m_refreshRateSpinBox->setSuffix(QStringLiteral(" 秒")); m_refreshRateSpinBox->setStyleSheet(kInputStyle);
+    form->addRow(QStringLiteral("界面主题："), m_themeCombo);
+    form->addRow(QStringLiteral("界面语言："), m_languageCombo);
+    form->addRow(QStringLiteral("数据刷新周期："), m_refreshRateSpinBox);
+    static_cast<QVBoxLayout *>(section->layout())->addLayout(form);
+    static_cast<QVBoxLayout *>(layout())->addWidget(section);
 }
 
 void SettingsPage::createExportSection()
 {
-    QGroupBox *group = new QGroupBox("导出设置", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QGridLayout *layout = new QGridLayout(group);
-
-    // 导出路径
-    layout->addWidget(new QLabel("导出路径:", group), 0, 0);
-    m_exportPathEdit = new QLineEdit(group);
-    m_exportPathEdit->setPlaceholderText("选择导出路径...");
-    layout->addWidget(m_exportPathEdit, 0, 1, 1, 3);
-
-    // 导出格式
-    layout->addWidget(new QLabel("导出格式:", group), 1, 0);
-    m_exportFormatCombo = new QComboBox(group);
-    m_exportFormatCombo->addItems({"CSV", "JSON", "NetCDF"});
-    layout->addWidget(m_exportFormatCombo, 1, 1);
-
-    // 自动导出
-    m_autoExportCheckBox = new QCheckBox("自动导出", group);
-    layout->addWidget(m_autoExportCheckBox, 1, 2);
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *section = createSection(QStringLiteral("数据导出"), this);
+    auto *form = new QFormLayout();
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    form->setHorizontalSpacing(18); form->setVerticalSpacing(10);
+    auto *pathLayout = new QHBoxLayout();
+    m_exportPathEdit = new QLineEdit(section); m_exportPathEdit->setStyleSheet(kInputStyle);
+    m_browseExportPathBtn = new QPushButton(QStringLiteral("浏览..."), section); m_browseExportPathBtn->setStyleSheet(kSecondaryButtonStyle);
+    connect(m_browseExportPathBtn, &QPushButton::clicked, this, &SettingsPage::onBrowseExportPathClicked);
+    pathLayout->addWidget(m_exportPathEdit, 1); pathLayout->addWidget(m_browseExportPathBtn);
+    m_exportFormatCombo = new QComboBox(section); m_exportFormatCombo->addItems({"CSV", "JSON", "NetCDF"}); m_exportFormatCombo->setStyleSheet(kInputStyle);
+    m_autoExportCheckBox = new QCheckBox(QStringLiteral("按设定周期自动导出"), section);
+    form->addRow(QStringLiteral("保存路径："), pathLayout);
+    form->addRow(QStringLiteral("文件格式："), m_exportFormatCombo);
+    form->addRow(QStringLiteral("自动导出："), m_autoExportCheckBox);
+    static_cast<QVBoxLayout *>(section->layout())->addLayout(form);
+    static_cast<QVBoxLayout *>(layout())->addWidget(section);
 }
 
 void SettingsPage::createButtons()
 {
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->setSpacing(16);
-
-    m_saveBtn = new QPushButton("保存设置", this);
-    m_saveBtn->setStyleSheet("QPushButton { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 4px; } QPushButton:hover { background: #0b7dda; }");
+    auto *row = new QHBoxLayout();
+    m_saveBtn = new QPushButton(QStringLiteral("保存配置"), this); m_saveBtn->setStyleSheet(kPrimaryButtonStyle);
+    m_resetBtn = new QPushButton(QStringLiteral("恢复默认"), this); m_resetBtn->setStyleSheet(kSecondaryButtonStyle);
     connect(m_saveBtn, &QPushButton::clicked, this, &SettingsPage::onSaveClicked);
-    buttonLayout->addWidget(m_saveBtn);
-
-    m_resetBtn = new QPushButton("恢复默认", this);
-    m_resetBtn->setStyleSheet("QPushButton { background: #9e9e9e; color: white; border: none; padding: 10px 20px; border-radius: 4px; } QPushButton:hover { background: #757575; }");
     connect(m_resetBtn, &QPushButton::clicked, this, &SettingsPage::onResetClicked);
-    buttonLayout->addWidget(m_resetBtn);
-
-    buttonLayout->addStretch();
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addLayout(buttonLayout);
-    }
+    row->addWidget(m_saveBtn); row->addWidget(m_resetBtn); row->addStretch();
+    static_cast<QVBoxLayout *>(layout())->addLayout(row);
 }

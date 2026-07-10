@@ -3,20 +3,13 @@
 
 #include <QWidget>
 #include <QComboBox>
-#include <QTableWidget>
+#include <QHBoxLayout>
 #include <QVector>
 
-// 包含头文件（因为使用了嵌套类型）
-#include "widgets/RangeGateTable.h"
+#include "ui/widgets/RangeGateTable.h"
 
-// 前向声明
 class WindTrendChart;
 
-/**
- * @brief 风场页面
- *
- * 显示 30-1000m 分层风廓线、切变、湍流和空间分布
- */
 class WindFieldPage : public QWidget
 {
     Q_OBJECT
@@ -25,7 +18,6 @@ public:
     explicit WindFieldPage(QWidget *parent = nullptr);
     ~WindFieldPage() override;
 
-    // 数据更新
     void updateWindData(double windSpeed, double windDirection, double confidence);
     void updateGateData(const QVector<RangeGateTable::GateData> &data);
 
@@ -39,15 +31,11 @@ private:
     void createCharts();
     void createTable();
 
-    // 筛选控件
     QComboBox *m_timeWindowCombo;
     QComboBox *m_resolutionCombo;
-
-    // 图表
+    QHBoxLayout *m_headerLayout;
     WindTrendChart *m_windSpeedChart;
     WindTrendChart *m_windDirectionChart;
-
-    // 表格
     RangeGateTable *m_gateTable;
 };
 

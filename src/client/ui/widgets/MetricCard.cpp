@@ -1,6 +1,7 @@
 #include "MetricCard.h"
+
 #include <QMouseEvent>
-#include <QGraphicsDropShadowEffect>
+#include <QPainter>
 
 MetricCard::MetricCard(QWidget *parent)
     : QWidget(parent)
@@ -11,12 +12,11 @@ MetricCard::MetricCard(QWidget *parent)
     , m_unitLabel(nullptr)
 {
     setupUI();
-    setFixedSize(180, 100);
+    setMinimumSize(148, 92);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
-MetricCard::~MetricCard()
-{
-}
+MetricCard::~MetricCard() = default;
 
 void MetricCard::setData(const QString &title, double value, const QString &unit, const QString &status)
 {
@@ -24,67 +24,53 @@ void MetricCard::setData(const QString &title, double value, const QString &unit
     m_value = value;
     m_unit = unit;
     m_status = status;
-
-    if (m_titleLabel) m_titleLabel->setText(title);
+    m_titleLabel->setText(title);
+    m_unitLabel->setText(unit);
     updateDisplay();
 }
 
-void MetricCard::setValue(double value)
-{
-    m_value = value;
-    updateDisplay();
-}
-
-void MetricCard::setStatus(const QString &status)
-{
-    m_status = status;
-    update();
-}
+void MetricCard::setValue(double value) { m_value = value; updateDisplay(); }
+void MetricCard::setStatus(const QString &status) { m_status = status; update(); }
 
 void MetricCard::setupUI()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(12, 8, 12, 8);
-    mainLayout->setSpacing(4);
-
+    auto *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(16, 12, 12, 10);
+    mainLayout->setSpacing(5);
     m_titleLabel = new QLabel(this);
-    m_titleLabel->setStyleSheet("color: #666; font-size: 12px;");
+    m_titleLabel->setStyleSheet("color:#667085; font-size:12px;");
     mainLayout->addWidget(m_titleLabel);
-
-    QHBoxLayout *valueLayout = new QHBoxLayout();
+    auto *valueLayout = new QHBoxLayout();
     valueLayout->setSpacing(4);
-
     m_valueLabel = new QLabel(this);
-    m_valueLabel->setStyleSheet("color: #333; font-size: 24px; font-weight: bold;");
-    valueLayout->addWidget(m_valueLabel);
-
+    m_valueLabel->setStyleSheet("color:#182230; font-size:26px; font-weight:600;");
     m_unitLabel = new QLabel(this);
-    m_unitLabel->setStyleSheet("color: #999; font-size: 12px;");
+    m_unitLabel->setStyleSheet("color:#667085; font-size:12px; padding-top:7px;");
+    valueLayout->addWidget(m_valueLabel);
     valueLayout->addWidget(m_unitLabel);
     valueLayout->addStretch();
-
     mainLayout->addLayout(valueLayout);
-    mainLayout->addStretch();
-
-    QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
-    shadow->setBlurRadius(10);
-    shadow->setXOffset(0);
-    shadow->setYOffset(2);
-    shadow->setColor(QColor(0, 0, 0, 30));
-    setGraphicsEffect(shadow);
+    setStyleSheet("MetricCard { background:#ffffff; border:1px solid #d9dee5; border-radius:4px; }"
+                  "MetricCard:hover { border-color:#9eb4c7; }");
 }
 
 void MetricCard::updateDisplay()
 {
-    if (m_valueLabel) {
-        m_valueLabel->setText(QString::number(m_value, 'f', 2));
-    }
+    m_valueLabel->setText(QString::number(m_value, 'f', 1));
+}
+
+void MetricCard::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event)
+    QColor color("#2f6f9f");
+    if (m_status == "warning") color = QColor("#b7791f");
+    if (m_status == "danger") color = QColor("#c93d32");
+    QPainter painter(this);
+    painter.fillRect(QRect(0, 0, 4, height()), color);
 }
 
 void MetricCard::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
-        emit clicked();
-    }
+    if (event->button() == Qt::LeftButton) emit clicked();
     QWidget::mousePressEvent(event);
 }

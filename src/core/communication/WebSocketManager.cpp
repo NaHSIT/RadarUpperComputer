@@ -5,7 +5,7 @@
 
 WebSocketManager::WebSocketManager(QObject *parent)
     : QObject(parent)
-    , m_socket(new QWebSocket(this))
+    , m_socket(new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this))
     , m_reconnectTimer(new QTimer(this))
     , m_heartbeatTimer(new QTimer(this))
     , m_reconnectEnabled(true)

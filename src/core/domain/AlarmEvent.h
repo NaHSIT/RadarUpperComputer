@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QDateTime>
+#include <QJsonObject>
+#include <QString>
 #include "RadarTypes.h"
 
 /**

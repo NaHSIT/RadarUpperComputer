@@ -17,13 +17,8 @@ ClientApp::~ClientApp()
 
 bool ClientApp::initialize()
 {
-    // 设置服务
     setupServices();
-
-    // 设置 UI
     setupUI();
-
-    // 加载设置
     loadSettings();
 
     emit initialized();
@@ -48,26 +43,23 @@ void ClientApp::shutdown()
 
 void ClientApp::setupServices()
 {
-    // 创建服务
     m_deviceService = new DeviceService(this);
     m_alarmService = new AlarmService(this);
 
-    // 连接信号
     connect(m_deviceService, &DeviceService::connectionStateChanged,
             this, [this](ConnectionState state) {
-                // 处理连接状态变化
+                Q_UNUSED(state);
             });
 }
 
 void ClientApp::setupUI()
 {
-    m_mainWindow = QScopedPointer<MainWindow>(new MainWindow());
+    m_mainWindow.reset(new MainWindow());
     m_mainWindow->setDeviceService(m_deviceService);
     m_mainWindow->setAlarmService(m_alarmService);
 }
 
 void ClientApp::loadSettings()
 {
-    // 加载应用程序设置
-    // TODO: 从配置文件加载设置
+    // TODO: Load application settings.
 }

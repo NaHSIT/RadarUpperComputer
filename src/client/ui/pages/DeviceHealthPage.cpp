@@ -1,260 +1,75 @@
 #include "DeviceHealthPage.h"
-#include "widgets/MetricCard.h"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGroupBox>
+#include "ui/widgets/MetricCard.h"
+
+#include <QFormLayout>
+#include <QFrame>
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QtMath>
+
+namespace {
+QFrame *section(const QString &name, QWidget *parent)
+{
+    auto *box = new QFrame(parent);
+    box->setObjectName("healthSection");
+    box->setStyleSheet("QFrame#healthSection { background:#ffffff; border:1px solid #d9dee5; border-radius:4px; }");
+    auto *layout = new QVBoxLayout(box); layout->setContentsMargins(14, 12, 14, 14); layout->setSpacing(10);
+    auto *title = new QLabel(name, box); title->setStyleSheet("color:#263442; font-size:14px; font-weight:600;"); layout->addWidget(title);
+    return box;
+}
+QLabel *valueLabel(QWidget *parent) { auto *label = new QLabel("--", parent); label->setStyleSheet("color:#182230; font-size:13px; font-weight:600;"); return label; }
+}
 
 DeviceHealthPage::DeviceHealthPage(QWidget *parent)
-    : QWidget(parent)
-    , m_deviceIdLabel(nullptr)
-    , m_modelLabel(nullptr)
-    , m_firmwareLabel(nullptr)
-    , m_ipLabel(nullptr)
-    , m_cpuTempCard(nullptr)
-    , m_fpgaTempCard(nullptr)
-    , m_ohVoltageCard(nullptr)
-    , m_ohCurrentCard(nullptr)
-    , m_rollCard(nullptr)
-    , m_tiltCard(nullptr)
-    , m_storageCard(nullptr)
-    , m_timeSyncLabel(nullptr)
-    , m_timeOffsetLabel(nullptr)
-{
-    setupUI();
-}
-
-DeviceHealthPage::~DeviceHealthPage()
-{
-}
-
-void DeviceHealthPage::updateConnectionStatus(bool ohPuOk, bool fpgaArmOk)
-{
-    // 更新连接状态显示
-    Q_UNUSED(ohPuOk)
-    Q_UNUSED(fpgaArmOk)
-}
-
-void DeviceHealthPage::updateTemperature(double cpuTemp, double fpgaTemp)
-{
-    if (m_cpuTempCard) {
-        m_cpuTempCard->setValue(cpuTemp);
-        m_cpuTempCard->setStatus(cpuTemp > 70 ? "danger" : (cpuTemp > 60 ? "warning" : "normal"));
-    }
-    if (m_fpgaTempCard) {
-        m_fpgaTempCard->setValue(fpgaTemp);
-        m_fpgaTempCard->setStatus(fpgaTemp > 70 ? "danger" : (fpgaTemp > 60 ? "warning" : "normal"));
-    }
-}
-
-void DeviceHealthPage::updatePower(double ohVoltage, double ohCurrent)
-{
-    if (m_ohVoltageCard) {
-        m_ohVoltageCard->setValue(ohVoltage);
-        m_ohVoltageCard->setStatus(ohVoltage < 22 || ohVoltage > 26 ? "danger" : "normal");
-    }
-    if (m_ohCurrentCard) {
-        m_ohCurrentCard->setValue(ohCurrent);
-    }
-}
-
-void DeviceHealthPage::updateAttitude(double roll, double tilt)
-{
-    if (m_rollCard) {
-        m_rollCard->setValue(roll);
-        m_rollCard->setStatus(qAbs(roll) > 5 ? "danger" : (qAbs(roll) > 2 ? "warning" : "normal"));
-    }
-    if (m_tiltCard) {
-        m_tiltCard->setValue(tilt);
-        m_tiltCard->setStatus(qAbs(tilt) > 5 ? "danger" : (qAbs(tilt) > 2 ? "warning" : "normal"));
-    }
-}
-
-void DeviceHealthPage::updateStorage(double usageRatio)
-{
-    if (m_storageCard) {
-        m_storageCard->setValue(usageRatio * 100);
-        m_storageCard->setStatus(usageRatio > 0.9 ? "danger" : (usageRatio > 0.7 ? "warning" : "normal"));
-    }
-}
-
-void DeviceHealthPage::updateTimeSync(bool locked, double offsetUs)
-{
-    if (m_timeSyncLabel) {
-        m_timeSyncLabel->setText(locked ? "已锁定" : "未锁定");
-        m_timeSyncLabel->setStyleSheet(locked ? "color: green;" : "color: red;");
-    }
-    if (m_timeOffsetLabel) {
-        m_timeOffsetLabel->setText(QString("%1 μs").arg(offsetUs, 0, 'f', 2));
-    }
-}
-
+    : QWidget(parent), m_deviceIdLabel(nullptr), m_modelLabel(nullptr), m_firmwareLabel(nullptr), m_ipLabel(nullptr)
+    , m_cpuTempCard(nullptr), m_fpgaTempCard(nullptr), m_ohVoltageCard(nullptr), m_ohCurrentCard(nullptr)
+    , m_rollCard(nullptr), m_tiltCard(nullptr), m_storageCard(nullptr), m_timeSyncLabel(nullptr), m_timeOffsetLabel(nullptr)
+{ setupUI(); }
+DeviceHealthPage::~DeviceHealthPage() = default;
+void DeviceHealthPage::updateConnectionStatus(bool ohPuOk, bool fpgaArmOk) { Q_UNUSED(ohPuOk) Q_UNUSED(fpgaArmOk) }
+void DeviceHealthPage::updateTemperature(double cpu, double fpga) { m_cpuTempCard->setValue(cpu); m_cpuTempCard->setStatus(cpu > 70 ? "danger" : cpu > 60 ? "warning" : "normal"); m_fpgaTempCard->setValue(fpga); m_fpgaTempCard->setStatus(fpga > 70 ? "danger" : fpga > 60 ? "warning" : "normal"); }
+void DeviceHealthPage::updatePower(double voltage, double current) { m_ohVoltageCard->setValue(voltage); m_ohVoltageCard->setStatus(voltage < 22 || voltage > 26 ? "danger" : "normal"); m_ohCurrentCard->setValue(current); }
+void DeviceHealthPage::updateAttitude(double roll, double tilt) { m_rollCard->setValue(roll); m_rollCard->setStatus(qAbs(roll) > 5 ? "danger" : qAbs(roll) > 2 ? "warning" : "normal"); m_tiltCard->setValue(tilt); m_tiltCard->setStatus(qAbs(tilt) > 5 ? "danger" : qAbs(tilt) > 2 ? "warning" : "normal"); }
+void DeviceHealthPage::updateStorage(double ratio) { m_storageCard->setValue(ratio * 100); m_storageCard->setStatus(ratio > .9 ? "danger" : ratio > .7 ? "warning" : "normal"); }
+void DeviceHealthPage::updateTimeSync(bool locked, double offset) { m_timeSyncLabel->setText(locked ? QStringLiteral("已锁定") : QStringLiteral("未锁定")); m_timeSyncLabel->setStyleSheet(locked ? "color:#16713b; font-size:13px; font-weight:600;" : "color:#b42318; font-size:13px; font-weight:600;"); m_timeOffsetLabel->setText(QStringLiteral("%1 μs").arg(offset, 0, 'f', 2)); }
 void DeviceHealthPage::setupUI()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-    mainLayout->setSpacing(16);
-
-    // 页面标题
-    QLabel *titleLabel = new QLabel("设备健康", this);
-    titleLabel->setStyleSheet("color: #333; font-size: 18px; font-weight: bold;");
-    mainLayout->addWidget(titleLabel);
-
-    // 设备信息
+    auto *main = new QVBoxLayout(this); main->setContentsMargins(24,20,24,18); main->setSpacing(14);
+    auto *title = new QLabel(QStringLiteral("设备状态"), this); title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;"); main->addWidget(title);
+    auto *subtitle = new QLabel(QStringLiteral("查看主机、测量链路、姿态、电源和时间同步的实时状态"), this);
+    subtitle->setStyleSheet("color:#667085; font-size:12px; padding-top:2px;");
+    subtitle->setWordWrap(true);
+    main->addWidget(subtitle);
     createDeviceInfoSection();
-
-    // 温控
-    createTemperatureSection();
-
-    // 电源
-    createPowerSection();
-
-    // 姿态
-    createAttitudeSection();
-
-    // 存储
-    createStorageSection();
-
-    // 时间同步
-    createTimeSyncSection();
-
-    mainLayout->addStretch();
+    auto *metrics = new QGridLayout(); metrics->setHorizontalSpacing(10); metrics->setVerticalSpacing(10);
+    createTemperatureSection(); createPowerSection(); createAttitudeSection(); createStorageSection();
+    Q_UNUSED(metrics)
+    createTimeSyncSection(); main->addStretch();
 }
-
 void DeviceHealthPage::createDeviceInfoSection()
 {
-    QGroupBox *group = new QGroupBox("设备信息", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QGridLayout *gridLayout = new QGridLayout(group);
-
-    m_deviceIdLabel = new QLabel("--", group);
-    m_modelLabel = new QLabel("--", group);
-    m_firmwareLabel = new QLabel("--", group);
-    m_ipLabel = new QLabel("--", group);
-
-    gridLayout->addWidget(new QLabel("设备编号:", group), 0, 0);
-    gridLayout->addWidget(m_deviceIdLabel, 0, 1);
-    gridLayout->addWidget(new QLabel("型号:", group), 0, 2);
-    gridLayout->addWidget(m_modelLabel, 0, 3);
-
-    gridLayout->addWidget(new QLabel("固件版本:", group), 1, 0);
-    gridLayout->addWidget(m_firmwareLabel, 1, 1);
-    gridLayout->addWidget(new QLabel("IP 地址:", group), 1, 2);
-    gridLayout->addWidget(m_ipLabel, 1, 3);
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *box = section(QStringLiteral("设备信息"), this); auto *form = new QGridLayout(); form->setColumnStretch(1,1); form->setColumnStretch(3,1);
+    m_deviceIdLabel=valueLabel(box); m_modelLabel=valueLabel(box); m_firmwareLabel=valueLabel(box); m_ipLabel=valueLabel(box);
+    const QStringList labels={QStringLiteral("设备编号"),QStringLiteral("设备型号"),QStringLiteral("固件版本"),QStringLiteral("设备地址")}; const QList<QLabel*> values={m_deviceIdLabel,m_modelLabel,m_firmwareLabel,m_ipLabel};
+    for(int i=0;i<4;++i){auto *label=new QLabel(labels[i]+QStringLiteral("："),box);label->setStyleSheet("color:#667085; font-size:13px;");form->addWidget(label,i/2*1,(i%2)*2);form->addWidget(values[i],i/2*1,(i%2)*2+1);} static_cast<QVBoxLayout*>(box->layout())->addLayout(form); static_cast<QVBoxLayout*>(layout())->addWidget(box);
 }
-
 void DeviceHealthPage::createTemperatureSection()
 {
-    QGroupBox *group = new QGroupBox("温控状态", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QHBoxLayout *hLayout = new QHBoxLayout(group);
-
-    m_cpuTempCard = new MetricCard(group);
-    m_cpuTempCard->setData("CPU 温度", 0.0, "°C");
-    hLayout->addWidget(m_cpuTempCard);
-
-    m_fpgaTempCard = new MetricCard(group);
-    m_fpgaTempCard->setData("FPGA 温度", 0.0, "°C");
-    hLayout->addWidget(m_fpgaTempCard);
-
-    hLayout->addStretch();
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *box=section(QStringLiteral("温度监测"),this); auto *row=new QHBoxLayout(); m_cpuTempCard=new MetricCard(box);m_cpuTempCard->setData(QStringLiteral("CPU 温度"),0,QStringLiteral("°C"));m_fpgaTempCard=new MetricCard(box);m_fpgaTempCard->setData(QStringLiteral("FPGA 温度"),0,QStringLiteral("°C"));row->addWidget(m_cpuTempCard);row->addWidget(m_fpgaTempCard);row->addStretch();static_cast<QVBoxLayout*>(box->layout())->addLayout(row);static_cast<QVBoxLayout*>(layout())->addWidget(box);
 }
-
 void DeviceHealthPage::createPowerSection()
 {
-    QGroupBox *group = new QGroupBox("电源状态", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QHBoxLayout *hLayout = new QHBoxLayout(group);
-
-    m_ohVoltageCard = new MetricCard(group);
-    m_ohVoltageCard->setData("OH 电压", 0.0, "V");
-    hLayout->addWidget(m_ohVoltageCard);
-
-    m_ohCurrentCard = new MetricCard(group);
-    m_ohCurrentCard->setData("OH 电流", 0.0, "A");
-    hLayout->addWidget(m_ohCurrentCard);
-
-    hLayout->addStretch();
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *box=section(QStringLiteral("供电状态"),this);auto *row=new QHBoxLayout();m_ohVoltageCard=new MetricCard(box);m_ohVoltageCard->setData(QStringLiteral("光端机电压"),0,"V");m_ohCurrentCard=new MetricCard(box);m_ohCurrentCard->setData(QStringLiteral("光端机电流"),0,"A");row->addWidget(m_ohVoltageCard);row->addWidget(m_ohCurrentCard);row->addStretch();static_cast<QVBoxLayout*>(box->layout())->addLayout(row);static_cast<QVBoxLayout*>(layout())->addWidget(box);
 }
-
 void DeviceHealthPage::createAttitudeSection()
 {
-    QGroupBox *group = new QGroupBox("姿态状态", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QHBoxLayout *hLayout = new QHBoxLayout(group);
-
-    m_rollCard = new MetricCard(group);
-    m_rollCard->setData("Roll", 0.0, "°");
-    hLayout->addWidget(m_rollCard);
-
-    m_tiltCard = new MetricCard(group);
-    m_tiltCard->setData("Tilt", 0.0, "°");
-    hLayout->addWidget(m_tiltCard);
-
-    hLayout->addStretch();
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *box=section(QStringLiteral("安装姿态"),this);auto *row=new QHBoxLayout();m_rollCard=new MetricCard(box);m_rollCard->setData(QStringLiteral("横滚角"),0,QStringLiteral("°"));m_tiltCard=new MetricCard(box);m_tiltCard->setData(QStringLiteral("俯仰角"),0,QStringLiteral("°"));row->addWidget(m_rollCard);row->addWidget(m_tiltCard);m_storageCard=new MetricCard(box);m_storageCard->setData(QStringLiteral("磁盘使用率"),0,"%");row->addWidget(m_storageCard);row->addStretch();static_cast<QVBoxLayout*>(box->layout())->addLayout(row);static_cast<QVBoxLayout*>(layout())->addWidget(box);
 }
-
-void DeviceHealthPage::createStorageSection()
-{
-    QGroupBox *group = new QGroupBox("存储状态", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QHBoxLayout *hLayout = new QHBoxLayout(group);
-
-    m_storageCard = new MetricCard(group);
-    m_storageCard->setData("存储使用率", 0.0, "%");
-    hLayout->addWidget(m_storageCard);
-
-    hLayout->addStretch();
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
-}
-
+void DeviceHealthPage::createStorageSection() {}
 void DeviceHealthPage::createTimeSyncSection()
 {
-    QGroupBox *group = new QGroupBox("时间同步", this);
-    group->setStyleSheet("QGroupBox { font-weight: bold; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; padding-top: 15px; } QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 5px; }");
-
-    QGridLayout *gridLayout = new QGridLayout(group);
-
-    m_timeSyncLabel = new QLabel("--", group);
-    m_timeOffsetLabel = new QLabel("--", group);
-
-    gridLayout->addWidget(new QLabel("同步状态:", group), 0, 0);
-    gridLayout->addWidget(m_timeSyncLabel, 0, 1);
-    gridLayout->addWidget(new QLabel("时间偏差:", group), 0, 2);
-    gridLayout->addWidget(m_timeOffsetLabel, 0, 3);
-
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(this->layout());
-    if (mainLayout) {
-        mainLayout->addWidget(group);
-    }
+    auto *box=section(QStringLiteral("时间同步"),this);auto *row=new QHBoxLayout();auto *a=new QLabel(QStringLiteral("同步状态："),box);a->setStyleSheet("color:#667085; font-size:13px;");m_timeSyncLabel=valueLabel(box);auto *b=new QLabel(QStringLiteral("时间偏移："),box);b->setStyleSheet("color:#667085; font-size:13px; margin-left:32px;");m_timeOffsetLabel=valueLabel(box);row->addWidget(a);row->addWidget(m_timeSyncLabel);row->addWidget(b);row->addWidget(m_timeOffsetLabel);row->addStretch();static_cast<QVBoxLayout*>(box->layout())->addLayout(row);static_cast<QVBoxLayout*>(layout())->addWidget(box);
 }

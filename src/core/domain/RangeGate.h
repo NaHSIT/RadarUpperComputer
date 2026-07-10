@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QVector>
+#include <QJsonObject>
+#include <QString>
 #include "RadarTypes.h"
 
 /**

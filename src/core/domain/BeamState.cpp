@@ -1,4 +1,5 @@
 #include "BeamState.h"
+#include <QJsonArray>
 
 BeamState::BeamState(QObject *parent)
     : QObject(parent)

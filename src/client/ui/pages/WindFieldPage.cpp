@@ -1,16 +1,28 @@
 #include "WindFieldPage.h"
-#include "widgets/WindTrendChart.h"
-#include "widgets/RangeGateTable.h"
 
-#include <QVBoxLayout>
+#include "ui/widgets/RangeGateTable.h"
+#include "ui/widgets/WindTrendChart.h"
+
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QGroupBox>
+#include <QVBoxLayout>
+
+namespace {
+QFrame *createPanel(QWidget *parent)
+{
+    auto *panel = new QFrame(parent);
+    panel->setObjectName("windFieldPanel");
+    panel->setStyleSheet("QFrame#windFieldPanel { background:#ffffff; border:1px solid #d9dee5; border-radius:4px; }");
+    return panel;
+}
+}
 
 WindFieldPage::WindFieldPage(QWidget *parent)
     : QWidget(parent)
     , m_timeWindowCombo(nullptr)
     , m_resolutionCombo(nullptr)
+    , m_headerLayout(nullptr)
     , m_windSpeedChart(nullptr)
     , m_windDirectionChart(nullptr)
     , m_gateTable(nullptr)
@@ -18,141 +30,101 @@ WindFieldPage::WindFieldPage(QWidget *parent)
     setupUI();
 }
 
-WindFieldPage::~WindFieldPage()
-{
-}
+WindFieldPage::~WindFieldPage() = default;
 
-void WindFieldPage::updateWindData(double windSpeed, double windDirection, double confidence)
+void WindFieldPage::updateWindData(double speed, double direction, double confidence)
 {
-    if (m_windSpeedChart) {
-        m_windSpeedChart->addDataPoint(windSpeed);
-    }
-    if (m_windDirectionChart) {
-        m_windDirectionChart->addDataPoint(windDirection);
-    }
+    Q_UNUSED(confidence)
+    m_windSpeedChart->addDataPoint(speed);
+    m_windDirectionChart->addDataPoint(direction);
 }
 
 void WindFieldPage::updateGateData(const QVector<RangeGateTable::GateData> &data)
 {
-    if (m_gateTable) {
-        m_gateTable->setGateData(data);
-    }
+    m_gateTable->setGateData(data);
 }
 
-void WindFieldPage::onTimeWindowChanged(const QString &window)
-{
-    Q_UNUSED(window)
-    // TODO: 加载对应时间窗口的数据
-}
-
-void WindFieldPage::onResolutionChanged(const QString &resolution)
-{
-    Q_UNUSED(resolution)
-    // TODO: 切换分辨率
-}
+void WindFieldPage::onTimeWindowChanged(const QString &window) { Q_UNUSED(window) }
+void WindFieldPage::onResolutionChanged(const QString &resolution) { Q_UNUSED(resolution) }
 
 void WindFieldPage::setupUI()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-    mainLayout->setSpacing(16);
+    auto *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(24, 20, 24, 18);
+    mainLayout->setSpacing(14);
 
-    // 页面标题
-    QLabel *titleLabel = new QLabel("风场", this);
-    titleLabel->setStyleSheet("color: #333; font-size: 18px; font-weight: bold;");
-    mainLayout->addWidget(titleLabel);
-
-    // 创建筛选控件
+    m_headerLayout = new QHBoxLayout();
+    auto *heading = new QVBoxLayout();
+    auto *title = new QLabel(QStringLiteral("风场数据"), this);
+    title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;");
+    auto *subtitle = new QLabel(QStringLiteral("按时间窗口查看风速、风向趋势及分层测量结果"), this);
+    subtitle->setStyleSheet("color:#667085; font-size:12px; padding-top:3px;");
+    subtitle->setWordWrap(true);
+    heading->addWidget(title);
+    heading->addWidget(subtitle);
+    m_headerLayout->addLayout(heading, 1);
+    mainLayout->addLayout(m_headerLayout);
     createHeader();
-
-    // 创建图表
     createCharts();
-
-    // 创建表格
     createTable();
-
-    mainLayout->addStretch();
 }
 
 void WindFieldPage::createHeader()
 {
-    QHBoxLayout *headerLayout = new QHBoxLayout();
-    headerLayout->setSpacing(16);
-
-    // 时间窗口选择
-    QLabel *timeLabel = new QLabel("时间窗口:", this);
-    timeLabel->setStyleSheet("color: #666;");
-    headerLayout->addWidget(timeLabel);
-
+    auto *timeLabel = new QLabel(QStringLiteral("时间窗口"), this);
+    timeLabel->setStyleSheet("color:#52606d; font-size:12px;");
     m_timeWindowCombo = new QComboBox(this);
-    m_timeWindowCombo->addItems({"实时", "1分钟", "10分钟", "1小时"});
-    m_timeWindowCombo->setStyleSheet("padding: 5px; border: 1px solid #ddd; border-radius: 4px;");
-    connect(m_timeWindowCombo, &QComboBox::currentTextChanged,
-            this, &WindFieldPage::onTimeWindowChanged);
-    headerLayout->addWidget(m_timeWindowCombo);
+    m_timeWindowCombo->addItems({QStringLiteral("实时"), QStringLiteral("1 分钟"), QStringLiteral("10 分钟"), QStringLiteral("1 小时")});
+    m_timeWindowCombo->setMinimumWidth(96);
+    m_timeWindowCombo->setStyleSheet("QComboBox { min-height:28px; padding:0 8px; border:1px solid #bfc9d4; border-radius:3px; }");
+    connect(m_timeWindowCombo, &QComboBox::currentTextChanged, this, &WindFieldPage::onTimeWindowChanged);
 
-    // 分辨率选择
-    QLabel *resLabel = new QLabel("分辨率:", this);
-    resLabel->setStyleSheet("color: #666;");
-    headerLayout->addWidget(resLabel);
-
+    auto *resolutionLabel = new QLabel(QStringLiteral("距离分辨率"), this);
+    resolutionLabel->setStyleSheet("color:#52606d; font-size:12px; margin-left:8px;");
     m_resolutionCombo = new QComboBox(this);
-    m_resolutionCombo->addItems({"10m", "20m"});
-    m_resolutionCombo->setStyleSheet("padding: 5px; border: 1px solid #ddd; border-radius: 4px;");
-    connect(m_resolutionCombo, &QComboBox::currentTextChanged,
-            this, &WindFieldPage::onResolutionChanged);
-    headerLayout->addWidget(m_resolutionCombo);
+    m_resolutionCombo->addItems({"10 m", "20 m"});
+    m_resolutionCombo->setMinimumWidth(76);
+    m_resolutionCombo->setStyleSheet("QComboBox { min-height:28px; padding:0 8px; border:1px solid #bfc9d4; border-radius:3px; }");
+    connect(m_resolutionCombo, &QComboBox::currentTextChanged, this, &WindFieldPage::onResolutionChanged);
 
-    headerLayout->addStretch();
-
-    // 添加到主布局
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
-    if (mainLayout) {
-        mainLayout->addLayout(headerLayout);
-    }
+    m_headerLayout->addWidget(timeLabel);
+    m_headerLayout->addWidget(m_timeWindowCombo);
+    m_headerLayout->addWidget(resolutionLabel);
+    m_headerLayout->addWidget(m_resolutionCombo);
 }
 
 void WindFieldPage::createCharts()
 {
-    QHBoxLayout *chartLayout = new QHBoxLayout();
-    chartLayout->setSpacing(16);
-
-    // 风速廓线图
-    QVBoxLayout *speedLayout = new QVBoxLayout();
-    QLabel *speedLabel = new QLabel("风速廓线", this);
-    speedLabel->setStyleSheet("color: #333; font-size: 12px; font-weight: bold;");
-    speedLayout->addWidget(speedLabel);
-
-    m_windSpeedChart = new WindTrendChart(this);
+    auto *row = new QHBoxLayout();
+    row->setSpacing(14);
+    auto *speedPanel = createPanel(this);
+    auto *speedLayout = new QVBoxLayout(speedPanel);
+    speedLayout->setContentsMargins(14, 12, 14, 14);
+    auto *speedTitle = new QLabel(QStringLiteral("风速趋势"), speedPanel);
+    speedTitle->setStyleSheet("color:#263442; font-size:14px; font-weight:600;");
+    speedLayout->addWidget(speedTitle);
+    m_windSpeedChart = new WindTrendChart(speedPanel);
     speedLayout->addWidget(m_windSpeedChart);
+    row->addWidget(speedPanel, 1);
 
-    chartLayout->addLayout(speedLayout);
-
-    // 风向廓线图
-    QVBoxLayout *dirLayout = new QVBoxLayout();
-    QLabel *dirLabel = new QLabel("风向廓线", this);
-    dirLabel->setStyleSheet("color: #333; font-size: 12px; font-weight: bold;");
-    dirLayout->addWidget(dirLabel);
-
-    m_windDirectionChart = new WindTrendChart(this);
-    dirLayout->addWidget(m_windDirectionChart);
-
-    chartLayout->addLayout(dirLayout);
-
-    // 添加到主布局
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
-    if (mainLayout) {
-        mainLayout->addLayout(chartLayout);
-    }
+    auto *directionPanel = createPanel(this);
+    auto *directionLayout = new QVBoxLayout(directionPanel);
+    directionLayout->setContentsMargins(14, 12, 14, 14);
+    auto *directionTitle = new QLabel(QStringLiteral("风向趋势"), directionPanel);
+    directionTitle->setStyleSheet("color:#263442; font-size:14px; font-weight:600;");
+    directionLayout->addWidget(directionTitle);
+    m_windDirectionChart = new WindTrendChart(directionPanel);
+    directionLayout->addWidget(m_windDirectionChart);
+    row->addWidget(directionPanel, 1);
+    static_cast<QVBoxLayout *>(layout())->addLayout(row);
 }
 
 void WindFieldPage::createTable()
 {
-    m_gateTable = new RangeGateTable(this);
-
-    // 添加到主布局
-    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
-    if (mainLayout) {
-        mainLayout->addWidget(m_gateTable);
-    }
+    auto *panel = createPanel(this);
+    auto *panelLayout = new QVBoxLayout(panel);
+    panelLayout->setContentsMargins(14, 12, 14, 14);
+    m_gateTable = new RangeGateTable(panel);
+    panelLayout->addWidget(m_gateTable);
+    static_cast<QVBoxLayout *>(layout())->addWidget(panel);
 }

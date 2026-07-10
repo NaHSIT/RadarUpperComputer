@@ -1,4 +1,5 @@
 #include "RangeGate.h"
+#include <QJsonArray>
 
 RangeGate::RangeGate(QObject *parent)
     : QObject(parent)

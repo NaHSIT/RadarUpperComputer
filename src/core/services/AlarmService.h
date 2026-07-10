@@ -1,8 +1,9 @@
-#ifndefALARMSERVICE_H
+#ifndef ALARMSERVICE_H
 #define ALARMSERVICE_H
 
 #include <QObject>
 #include <QList>
+#include <QString>
 #include "domain/AlarmEvent.h"
 
 /**

@@ -5,12 +5,11 @@
 #include <QListWidget>
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QVector>
+#include <QString>
 
-/**
- * @brief 导航栏组件
- *
- * 左侧纵向导航栏，显示页面入口
- */
+class QListWidgetItem;
+
 class NavigationBar : public QWidget
 {
     Q_OBJECT
@@ -19,13 +18,8 @@ public:
     explicit NavigationBar(QWidget *parent = nullptr);
     ~NavigationBar() override;
 
-    // 添加导航项
     void addItem(const QString &icon, const QString &text, int pageIndex);
-
-    // 设置当前选中项
     void setCurrentIndex(int index);
-
-    // 获取当前索引
     int currentIndex() const { return m_currentIndex; }
 
 signals:
@@ -40,15 +34,16 @@ private:
     void setupUI();
     void updateSelection(int index);
 
-    QListWidget *m_listWidget;
-    QLabel *m_logoLabel;
-    QVBoxLayout *m_layout;
-    int m_currentIndex;
     struct NavItem {
         QString icon;
         QString text;
         int pageIndex;
     };
+
+    QListWidget *m_listWidget;
+    QLabel *m_logoLabel;
+    QVBoxLayout *m_layout;
+    int m_currentIndex;
     QVector<NavItem> m_items;
 };
 

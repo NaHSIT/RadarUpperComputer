@@ -3,6 +3,9 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QPainterPath>
 
 class WindRoseWidget : public QWidget
 {

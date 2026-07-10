@@ -5,6 +5,10 @@
 #include <QTimer>
 #include <QVector>
 #include <QPointF>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QString>
 
 class WindTrendChart : public QWidget
 {

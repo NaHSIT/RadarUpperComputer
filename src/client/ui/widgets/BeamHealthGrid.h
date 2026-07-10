@@ -6,6 +6,8 @@
 #include <QPaintEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
+#include <QString>
 
 class BeamHealthGrid : public QWidget
 {
@@ -34,7 +36,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
 
 private:
-    void drawBeamCard(QPainter &painter, int index, const BeamStatus &status);
+    void drawBeamCard(QPainter &painter, int index, const BeamStatus &status, const QRect &rect);
 
     QVector<BeamStatus> m_beamStatuses;
 };

@@ -3,8 +3,10 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QList>
 #include <QVector>
 #include <QPointF>
+#include <QString>
 #include "domain/WindProfile.h"
 #include "domain/DeviceHealth.h"
 #include "domain/AlarmEvent.h"

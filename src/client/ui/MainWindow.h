@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QLabel>
+#include <QPlainTextEdit>
 #include "domain/RadarTypes.h"
 
 class DeviceService;
@@ -47,9 +48,11 @@ private slots:
 private:
     void setupUI();
     void setupStatusBar();
+    void setupEventLog();
     void setupNavigation();
     void setupContentArea();
     void createPages();
+    void appendLog(const QString &message);
 
     // 服务
     DeviceService *m_deviceService;
@@ -60,6 +63,7 @@ private:
     QStackedWidget *m_contentStack;
     QLabel *m_connectionStatusLabel;
     QLabel *m_alarmCountLabel;
+    QPlainTextEdit *m_eventLog;
 
     // 页面
     DashboardPage *m_dashboardPage;

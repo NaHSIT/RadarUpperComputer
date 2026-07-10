@@ -1,5 +1,7 @@
 #include "TcpDataSource.h"
 
+#include <QNetworkProxy>
+
 TcpDataSource::TcpDataSource(QObject *parent)
     : QObject(parent)
     , m_socket(new QTcpSocket(this))
@@ -10,6 +12,9 @@ TcpDataSource::TcpDataSource(QObject *parent)
     , m_timeout(3000)
     , m_port(0)
 {
+    // Radar devices are addressed on a private LAN and must never inherit a
+    // desktop or IDE proxy configuration.
+    m_socket->setProxy(QNetworkProxy::NoProxy);
     connect(m_socket, &QTcpSocket::connected, this, &TcpDataSource::onConnected);
     connect(m_socket, &QTcpSocket::disconnected, this, &TcpDataSource::onDisconnected);
     connect(m_socket, &QTcpSocket::readyRead, this, &TcpDataSource::onReadyRead);
@@ -99,11 +104,15 @@ void TcpDataSource::onReadyRead()
 
 void TcpDataSource::onError(QAbstractSocket::SocketError error)
 {
-    Q_UNUSED(error)
     QString errorMsg = m_socket->errorString();
     emit errorOccurred(errorMsg);
 
-    if (m_state == ConnectionState::Connecting) {
+    if (error == QAbstractSocket::SocketTimeoutError) {
+        setState(ConnectionState::DataTimeout);
+    } else if (m_state == ConnectionState::Connecting
+               || error == QAbstractSocket::ConnectionRefusedError
+               || error == QAbstractSocket::HostNotFoundError
+               || error == QAbstractSocket::NetworkError) {
         setState(ConnectionState::Offline);
     } else {
         setState(ConnectionState::ProtocolError);

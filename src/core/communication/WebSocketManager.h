@@ -3,18 +3,17 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QUrl>
+#include <QString>
+#include <QStringList>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QAbstractSocket>
 
 #ifdef HAS_WEBSOCKETS
 #include <QWebSocket>
 #endif
 
-/**
- * @brief WebSocket 管理器
- *
- * 负责 WebSocket 连接和数据收发
- */
 class WebSocketManager : public QObject
 {
     Q_OBJECT
@@ -23,17 +22,14 @@ public:
     explicit WebSocketManager(QObject *parent = nullptr);
     ~WebSocketManager() override;
 
-    // 连接管理
     bool connectToServer(const QUrl &url, const QString &token = QString());
     void disconnectFromServer();
     bool isConnected() const;
 
-    // 消息发送
     void sendMessage(const QString &event, const QJsonObject &data);
     void subscribe(const QString &event);
     void unsubscribe(const QString &event);
 
-    // 配置
     void setReconnectEnabled(bool enabled);
     void setReconnectInterval(int ms);
     void setHeartbeatInterval(int ms);

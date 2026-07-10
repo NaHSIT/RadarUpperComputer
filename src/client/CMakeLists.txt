@@ -1,5 +1,3 @@
-# 客户端 CMakeLists.txt
-
 set(CLIENT_SOURCES
     main.cpp
     app/ClientApp.cpp
@@ -37,42 +35,29 @@ set(CLIENT_HEADERS
     ui/widgets/RangeGateTable.h
 )
 
-# 创建可执行文件
 add_executable(radar-client
     ${CLIENT_SOURCES}
     ${CLIENT_HEADERS}
 )
 
-# 设置包含目录
 target_include_directories(radar-client
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/src/core
 )
 
-# 链接库
 target_link_libraries(radar-client
     PRIVATE
         radar-core
         Qt6::Widgets
 )
 
-# 检查 Qt6::Charts 是否可用
 if(TARGET Qt6::Charts)
     target_link_libraries(radar-client PRIVATE Qt6::Charts)
     target_compile_definitions(radar-client PRIVATE HAS_CHARTS)
 endif()
 
-# 设置 C++ 标准
 set_target_properties(radar-client PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
-
-# 添加 MOC 支持
-set_target_properties(radar-client PROPERTIES AUTOMOC ON)
-
-# 设置输出目录
-set_target_properties(radar-client PROPERTIES
+    AUTOMOC ON
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

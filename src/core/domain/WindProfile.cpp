@@ -1,4 +1,5 @@
 #include "WindProfile.h"
+#include <QJsonArray>
 #include <algorithm>
 
 WindProfile::WindProfile(QObject *parent)

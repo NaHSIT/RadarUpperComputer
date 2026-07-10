@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QTableWidget>
 #include <QVector>
+#include <QString>
 
 class RangeGateTable : public QWidget
 {

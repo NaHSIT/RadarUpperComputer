@@ -5,6 +5,7 @@
 #include <QTableWidget>
 #include <QVector>
 #include <QDateTime>
+#include <QString>
 
 class AlarmList : public QWidget
 {

@@ -4,6 +4,10 @@
 #include <QWidget>
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QString>
 
 class MetricCard : public QWidget
 {
@@ -22,6 +26,7 @@ signals:
     void clicked();
 
 protected:
+    void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private:

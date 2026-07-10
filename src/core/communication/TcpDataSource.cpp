@@ -29,10 +29,14 @@ TcpDataSource::~TcpDataSource()
 
 bool TcpDataSource::connectToHost(const QString &host, quint16 port)
 {
-    if (m_state == ConnectionState::Connecting) {
+    const auto socketState = m_socket->state();
+    if (socketState == QAbstractSocket::HostLookupState
+        || socketState == QAbstractSocket::ConnectingState
+        || socketState == QAbstractSocket::ConnectedState) {
         return false;
     }
 
+    m_reconnectTimer->stop();
     m_host = host;
     m_port = port;
 
@@ -45,7 +49,7 @@ bool TcpDataSource::connectToHost(const QString &host, quint16 port)
 void TcpDataSource::disconnectFromHost()
 {
     m_reconnectTimer->stop();
-    m_socket->disconnectFromHost();
+    m_socket->abort();
     setState(ConnectionState::Offline);
 }
 
@@ -108,12 +112,24 @@ void TcpDataSource::onError(QAbstractSocket::SocketError error)
     emit errorOccurred(errorMsg);
 
     if (error == QAbstractSocket::SocketTimeoutError) {
-        setState(ConnectionState::DataTimeout);
+        if (m_state == ConnectionState::Connecting) {
+            setState(ConnectionState::Offline);
+            if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+                m_socket->abort();
+            }
+        } else {
+            setState(ConnectionState::DataTimeout);
+        }
     } else if (m_state == ConnectionState::Connecting
                || error == QAbstractSocket::ConnectionRefusedError
                || error == QAbstractSocket::HostNotFoundError
                || error == QAbstractSocket::NetworkError) {
         setState(ConnectionState::Offline);
+        // QTcpSocket may emit errorOccurred before it leaves ConnectingState.
+        // Abort the old attempt so a manual retry cannot overlap it.
+        if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+            m_socket->abort();
+        }
     } else {
         setState(ConnectionState::ProtocolError);
     }

@@ -50,6 +50,38 @@ void MainWindow::setDeviceService(DeviceService *service)
             this, &MainWindow::onConnectionStateChanged);
     connect(m_deviceService, &DeviceService::errorOccurred, this,
             [this](const QString &error) { appendLog(QStringLiteral("连接错误：%1").arg(error)); });
+    connect(m_deviceService, &DeviceService::windProfileUpdated, this,
+            [this](WindProfile *profile) {
+        if (!profile || !m_dashboardPage || !m_windFieldPage) return;
+
+        QVector<RangeGateTable::GateData> gateData;
+        gateData.reserve(profile->rangeGates().size());
+        for (const RangeGate *gate : profile->rangeGates()) {
+            gateData.append({
+                gate->gateIndex(), gate->distanceM(), gate->heightM(),
+                gate->windSpeedMps(), gate->windDirectionDeg(), gate->turbulenceIntensity(),
+                gate->verticalShear(), gate->horizontalShear(),
+                gate->cnrDb().isEmpty() ? 0.0 : gate->cnrDb().first(),
+                gate->confidence() >= 50.0 ? 1 : 0, gate->confidence(),
+                gate->confidence() >= 50.0 ? QStringLiteral("正常") : QStringLiteral("低置信度")
+            });
+        }
+
+        m_dashboardPage->updateWindData(profile->hubWindSpeedMps(), profile->hubWindDirectionDeg(),
+                                         profile->confidence(), profile->validGateCount(),
+                                         profile->blindRatio(), 0);
+        m_dashboardPage->updateGateData(gateData);
+        m_windFieldPage->updateWindData(profile->hubWindSpeedMps(), profile->hubWindDirectionDeg(),
+                                        profile->confidence());
+        m_windFieldPage->updateGateData(gateData);
+        const double cnrDb = gateData.isEmpty() ? 0.0 : gateData.first().cnrAvg;
+        if (m_beamPage) {
+            m_beamPage->updateSimulationData(cnrDb, profile->validGateCount(), profile->confidence());
+        }
+        for (int beam = 0; beam < 5; ++beam) {
+            m_dashboardPage->updateBeamStatus(beam, "normal", cnrDb, profile->validGateCount());
+        }
+    });
 }
 
 void MainWindow::setAlarmService(AlarmService *service)
@@ -83,24 +115,33 @@ void MainWindow::setupUI()
     setupStatusBar();
     setupEventLog();
     setStyleSheet(
-        "QMainWindow { background:#f3f5f7; }"
-        "QStatusBar { background:#ffffff; border-top:1px solid #d9dee5; color:#5b6573; font-size:12px; }"
-        "QStatusBar QLabel { padding:0 12px; }"
+        "QMainWindow { background:#f4f7fb; }"
+        "QStackedWidget { background:#f4f7fb; }"
+        "QScrollArea { border:0; }"
+        "QScrollBar:vertical { width:10px; background:transparent; margin:8px 2px; }"
+        "QScrollBar::handle:vertical { min-height:42px; background:#c5d0dc; border-radius:4px; }"
+        "QScrollBar::handle:vertical:hover { background:#9dacbb; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height:0; }"
+        "QStatusBar { background:#ffffff; border-top:1px solid #dce4ec; color:#5b6573; font-size:12px; }"
+        "QStatusBar QLabel { padding:0 14px; }"
+        "QDockWidget { color:#1d2939; font-size:13px; font-weight:600; }"
+        "QDockWidget::title { background:#ffffff; border-top:1px solid #dce4ec; padding:9px 14px; }"
+        "QToolTip { color:#ffffff; background:#1f3347; border:0; padding:6px 8px; }"
     );
 }
 
 void MainWindow::setupStatusBar()
 {
     auto *bar = statusBar();
-    bar->setFixedHeight(28);
+    bar->setFixedHeight(32);
     m_connectionStatusLabel = new QLabel(QStringLiteral("连接状态：未连接"), bar);
     m_alarmCountLabel = new QLabel(QStringLiteral("活动告警：0"), bar);
-    m_connectionStatusLabel->setStyleSheet("color:#687384;");
-    m_alarmCountLabel->setStyleSheet("color:#687384;");
+    m_connectionStatusLabel->setStyleSheet("color:#667085; font-weight:600;");
+    m_alarmCountLabel->setStyleSheet("color:#667085;");
     bar->addWidget(m_connectionStatusLabel);
     bar->addWidget(m_alarmCountLabel);
     auto *version = new QLabel(QStringLiteral("测风雷达客户端 1.0.0"), bar);
-    version->setStyleSheet("color:#8a94a3;");
+    version->setStyleSheet("color:#98a2b3; font-size:11px;");
     bar->addPermanentWidget(version);
 }
 
@@ -183,6 +224,9 @@ void MainWindow::onNavigationClicked(int pageIndex) { navigateTo(pageIndex); }
 
 void MainWindow::onConnectionStateChanged(ConnectionState state)
 {
+    if (m_beamPage) {
+        m_beamPage->setConnectionState(state == ConnectionState::Online);
+    }
     QString text = QStringLiteral("连接状态：未连接");
     QString color = "#687384";
     switch (state) {

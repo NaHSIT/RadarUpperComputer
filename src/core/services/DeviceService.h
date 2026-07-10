@@ -10,6 +10,7 @@
 #include "domain/RadarDevice.h"
 #include "domain/WindProfile.h"
 #include "domain/DeviceHealth.h"
+#include "communication/FrameParser.h"
 
 class DeviceService : public QObject
 {
@@ -47,6 +48,7 @@ private slots:
 
 private:
     void processFrame(const QByteArray &frame);
+    bool updateWindProfile(const QByteArray &payload);
     void updateConnectionState(ConnectionState state);
 
     ConnectionState m_connectionState;
@@ -54,6 +56,8 @@ private:
     WindProfile *m_currentProfile;
     DeviceHealth *m_deviceHealth;
     class TcpDataSource *m_dataSource;
+    FrameParser *m_frameParser;
+    uint32_t m_sequence;
     int m_port;
 };
 

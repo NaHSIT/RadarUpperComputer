@@ -8,6 +8,7 @@
 #include "ui/widgets/WindTrendChart.h"
 
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QVBoxLayout>
@@ -24,7 +25,7 @@ QFrame *panel(QWidget *parent)
 {
     auto *frame = new QFrame(parent);
     frame->setObjectName("dashboardPanel");
-    frame->setStyleSheet("QFrame#dashboardPanel { background:#ffffff; border:1px solid #d9dee5; border-radius:4px; }");
+    frame->setStyleSheet("QFrame#dashboardPanel { background:#ffffff; border:1px solid #dce4ec; border-radius:6px; }");
     return frame;
 }
 }
@@ -66,18 +67,18 @@ void DashboardPage::updateGateData(const QVector<RangeGateTable::GateData> &data
 void DashboardPage::setupUI()
 {
     auto *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(24, 20, 24, 18);
-    mainLayout->setSpacing(14);
+    mainLayout->setContentsMargins(28, 24, 28, 22);
+    mainLayout->setSpacing(16);
     auto *header = new QHBoxLayout();
     auto *heading = new QVBoxLayout();
     auto *title = new QLabel(QStringLiteral("运行总览"), this);
-    title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;");
+    title->setStyleSheet("color:#172b3d; font-size:24px; font-weight:600;");
     auto *subtitle = new QLabel(QStringLiteral("实时查看设备工作状态、近地层风场与活动告警"), this);
-    subtitle->setStyleSheet("color:#667085; font-size:12px; padding-top:3px;");
+    subtitle->setStyleSheet("color:#667085; font-size:13px; padding-top:4px;");
     heading->addWidget(title); heading->addWidget(subtitle);
     header->addLayout(heading); header->addStretch();
-    auto *stamp = new QLabel(QStringLiteral("数据刷新：1 秒"), this);
-    stamp->setStyleSheet("color:#526b80; background:#eaf1f6; border:1px solid #cbdbe7; padding:6px 10px; font-size:12px;");
+    auto *stamp = new QLabel(QStringLiteral("实时数据  ·  1 秒刷新"), this);
+    stamp->setStyleSheet("color:#13795b; background:#e8f7f0; border:1px solid #b6e3d1; border-radius:4px; padding:7px 11px; font-size:12px; font-weight:600;");
     header->addWidget(stamp);
     mainLayout->addLayout(header);
     createMetricCards();
@@ -87,39 +88,46 @@ void DashboardPage::setupUI()
 
 void DashboardPage::createMetricCards()
 {
-    auto *cards = new QHBoxLayout(); cards->setSpacing(10);
+    auto *cards = new QGridLayout();
+    cards->setHorizontalSpacing(14);
+    cards->setVerticalSpacing(14);
     const struct { MetricCard **card; QString title; QString unit; } definitions[] = {
         {&m_windSpeedCard, QStringLiteral("轮毂风速"), "m/s"}, {&m_windDirectionCard, QStringLiteral("轮毂风向"), QStringLiteral("°")},
         {&m_confidenceCard, QStringLiteral("数据置信度"), "%"}, {&m_validGatesCard, QStringLiteral("有效测量层"), QStringLiteral("层")},
         {&m_blindRatioCard, QStringLiteral("盲区比例"), "%"}, {&m_alarmCountCard, QStringLiteral("活动告警"), QStringLiteral("条")}
     };
-    for (const auto &definition : definitions) {
+    for (int index = 0; index < 6; ++index) {
+        const auto &definition = definitions[index];
         *definition.card = new MetricCard(this);
         (*definition.card)->setData(definition.title, 0.0, definition.unit);
-        cards->addWidget(*definition.card);
+        cards->addWidget(*definition.card, index / 3, index % 3);
     }
-    layout()->addItem(cards);
+    for (int column = 0; column < 3; ++column) cards->setColumnStretch(column, 1);
+    static_cast<QVBoxLayout *>(layout())->addLayout(cards);
 }
 
 void DashboardPage::createChartArea()
 {
-    auto *row = new QHBoxLayout(); row->setSpacing(14);
+    auto *row = new QHBoxLayout(); row->setSpacing(16);
     auto *trendPanel = panel(this); auto *trendLayout = new QVBoxLayout(trendPanel);
-    trendLayout->setContentsMargins(14, 12, 14, 14); trendLayout->addWidget(sectionTitle(QStringLiteral("风速趋势"), trendPanel));
+    trendLayout->setContentsMargins(18, 16, 18, 18); trendLayout->addWidget(sectionTitle(QStringLiteral("风速趋势"), trendPanel));
     m_windTrendChart = new WindTrendChart(trendPanel); trendLayout->addWidget(m_windTrendChart);
     connect(m_windTrendChart, &WindTrendChart::timeWindowChanged, this, &DashboardPage::onTimeWindowChanged);
-    row->addWidget(trendPanel, 3);
+    row->addWidget(trendPanel, 2);
 
+    auto *rightColumn = new QVBoxLayout();
+    rightColumn->setSpacing(16);
     auto *directionPanel = panel(this); auto *directionLayout = new QVBoxLayout(directionPanel);
-    directionLayout->setContentsMargins(14, 12, 14, 14); directionLayout->addWidget(sectionTitle(QStringLiteral("当前风向"), directionPanel));
+    directionLayout->setContentsMargins(18, 16, 18, 18); directionLayout->addWidget(sectionTitle(QStringLiteral("当前风向"), directionPanel));
     m_windRoseWidget = new WindRoseWidget(directionPanel); directionLayout->addWidget(m_windRoseWidget, 1, Qt::AlignCenter);
-    row->addWidget(directionPanel, 1);
+    rightColumn->addWidget(directionPanel, 1);
 
     auto *beamPanel = panel(this); auto *beamLayout = new QVBoxLayout(beamPanel);
     beamLayout->setContentsMargins(0, 0, 0, 0); m_beamHealthGrid = new BeamHealthGrid(beamPanel); beamLayout->addWidget(m_beamHealthGrid);
     connect(m_beamHealthGrid, &BeamHealthGrid::beamClicked, this, [this](int index, const QString &) { emit beamClicked(index); });
-    row->addWidget(beamPanel, 2);
-    layout()->addItem(row);
+    rightColumn->addWidget(beamPanel);
+    row->addLayout(rightColumn, 1);
+    static_cast<QVBoxLayout *>(layout())->addLayout(row);
 }
 
 void DashboardPage::createDataTableArea()
@@ -128,10 +136,11 @@ void DashboardPage::createDataTableArea()
     auto *gatePanel = panel(this); auto *gateLayout = new QVBoxLayout(gatePanel);
     gateLayout->setContentsMargins(14, 12, 14, 14); m_gateTable = new RangeGateTable(gatePanel); gateLayout->addWidget(m_gateTable);
     connect(m_gateTable, &RangeGateTable::gateClicked, this, &DashboardPage::gateClicked); row->addWidget(gatePanel, 2);
+    gatePanel->hide();
     auto *alarmPanel = panel(this); auto *alarmLayout = new QVBoxLayout(alarmPanel);
     alarmLayout->setContentsMargins(14, 12, 14, 14); m_alarmList = new AlarmList(alarmPanel); alarmLayout->addWidget(m_alarmList);
     connect(m_alarmList, &AlarmList::alarmClicked, this, &DashboardPage::alarmClicked); row->addWidget(alarmPanel, 1);
-    layout()->addItem(row);
+    static_cast<QVBoxLayout *>(layout())->addLayout(row);
 }
 
 void DashboardPage::onRefreshTimer() {}

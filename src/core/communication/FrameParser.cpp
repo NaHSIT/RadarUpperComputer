@@ -1,6 +1,39 @@
 #include "FrameParser.h"
 #include <cstring>
 
+namespace {
+
+uint16_t readU16BE(const char *data)
+{
+    const auto *bytes = reinterpret_cast<const unsigned char *>(data);
+    return static_cast<uint16_t>((static_cast<uint16_t>(bytes[0]) << 8) | bytes[1]);
+}
+
+uint32_t readU32BE(const char *data)
+{
+    const auto *bytes = reinterpret_cast<const unsigned char *>(data);
+    return (static_cast<uint32_t>(bytes[0]) << 24)
+         | (static_cast<uint32_t>(bytes[1]) << 16)
+         | (static_cast<uint32_t>(bytes[2]) << 8)
+         | bytes[3];
+}
+
+void appendU16BE(QByteArray &frame, uint16_t value)
+{
+    frame.append(static_cast<char>((value >> 8) & 0xFF));
+    frame.append(static_cast<char>(value & 0xFF));
+}
+
+void appendU32BE(QByteArray &frame, uint32_t value)
+{
+    frame.append(static_cast<char>((value >> 24) & 0xFF));
+    frame.append(static_cast<char>((value >> 16) & 0xFF));
+    frame.append(static_cast<char>((value >> 8) & 0xFF));
+    frame.append(static_cast<char>(value & 0xFF));
+}
+
+}
+
 FrameParser::FrameParser(QObject *parent)
     : QObject(parent)
 {
@@ -35,13 +68,13 @@ QList<Frame> FrameParser::parse(const QByteArray &data)
         }
 
         // 检查缓冲区长度是否足够
-        if (m_buffer.size() < static_cast<int>(sizeof(FrameHeader) + sizeof(FrameTail))) {
+        if (m_buffer.size() < 14) {
             break;  // 数据不完整
         }
 
         // 读取长度字段
-        uint16_t length = *reinterpret_cast<const uint16_t*>(m_buffer.constData() + 2);
-        int totalFrameSize = sizeof(FrameHeader) + length + sizeof(FrameTail);
+        uint16_t length = readU16BE(m_buffer.constData() + 2);
+        int totalFrameSize = 2 + 2 + length + 2;
 
         // 检查帧长是否合法
         if (totalFrameSize > MAX_FRAME_SIZE) {
@@ -67,14 +100,17 @@ QList<Frame> FrameParser::parse(const QByteArray &data)
 
         // 解析帧
         Frame frame;
-        const FrameHeader* header = reinterpret_cast<const FrameHeader*>(frameData.constData());
-        frame.header = header->header;
-        frame.length = header->length;
-        frame.command = header->command;
-        frame.sequence = header->sequence;
-        frame.payload = frameData.mid(sizeof(FrameHeader), length - sizeof(uint16_t));
-        frame.crc16 = *reinterpret_cast<const uint16_t*>(frameData.constData() + totalFrameSize - sizeof(FrameTail));
-        frame.tail = *reinterpret_cast<const uint16_t*>(frameData.constData() + totalFrameSize - 2);
+        frame.header = readU16BE(frameData.constData());
+        frame.length = length;
+        frame.command = readU16BE(frameData.constData() + 4);
+        frame.sequence = readU32BE(frameData.constData() + 6);
+        const int payloadLength = static_cast<int>(length)
+            - static_cast<int>(sizeof(uint16_t))
+            - static_cast<int>(sizeof(uint32_t))
+            - static_cast<int>(sizeof(uint16_t));
+        frame.payload = frameData.mid(sizeof(FrameHeader), payloadLength);
+        frame.crc16 = readU16BE(frameData.constData() + totalFrameSize - sizeof(FrameTail));
+        frame.tail = readU16BE(frameData.constData() + totalFrameSize - 2);
 
         frames.append(frame);
         emit frameParsed(frame);
@@ -87,24 +123,21 @@ QByteArray FrameParser::buildFrame(CommandCode command, uint32_t sequence, const
 {
     // 构建帧头
     QByteArray frame;
-    frame.append(reinterpret_cast<const char*>(&FRAME_HEADER), 2);
-
     uint16_t length = sizeof(uint16_t) + sizeof(uint32_t) + payload.size() + sizeof(uint16_t);
-    frame.append(reinterpret_cast<const char*>(&length), 2);
-
-    uint16_t cmd = static_cast<uint16_t>(command);
-    frame.append(reinterpret_cast<const char*>(&cmd), 2);
-    frame.append(reinterpret_cast<const char*>(&sequence), 4);
+    appendU16BE(frame, FRAME_HEADER);
+    appendU16BE(frame, length);
+    appendU16BE(frame, static_cast<uint16_t>(command));
+    appendU32BE(frame, sequence);
 
     // 添加 Payload
     frame.append(payload);
 
     // 计算并添加 CRC16
     uint16_t crc = calculateCRC16(frame);
-    frame.append(reinterpret_cast<const char*>(&crc), 2);
+    appendU16BE(frame, crc);
 
     // 添加帧尾
-    frame.append(reinterpret_cast<const char*>(&FRAME_TAIL), 2);
+    appendU16BE(frame, FRAME_TAIL);
 
     return frame;
 }
@@ -117,7 +150,7 @@ void FrameParser::clearBuffer()
 int FrameParser::findHeader(const QByteArray &buffer) const
 {
     for (int i = 0; i <= buffer.size() - 2; ++i) {
-        uint16_t value = *reinterpret_cast<const uint16_t*>(buffer.constData() + i);
+        uint16_t value = readU16BE(buffer.constData() + i);
         if (value == FRAME_HEADER) {
             return i;
         }
@@ -127,12 +160,12 @@ int FrameParser::findHeader(const QByteArray &buffer) const
 
 bool FrameParser::validateFrame(const QByteArray &frame) const
 {
-    if (frame.size() < static_cast<int>(sizeof(FrameHeader) + sizeof(FrameTail))) {
+    if (frame.size() < 14) {
         return false;
     }
 
     // 提取 CRC
-    uint16_t storedCRC = *reinterpret_cast<const uint16_t*>(frame.constData() + frame.size() - sizeof(FrameTail));
+    uint16_t storedCRC = readU16BE(frame.constData() + frame.size() - sizeof(FrameTail));
 
     // 计算 CRC（不包括 CRC 字段和帧尾）
     QByteArray dataForCRC = frame.left(frame.size() - sizeof(FrameTail));

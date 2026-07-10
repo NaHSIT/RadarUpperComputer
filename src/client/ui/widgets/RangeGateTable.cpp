@@ -21,11 +21,11 @@ void RangeGateTable::setupUI()
     m_table->verticalHeader()->hide(); m_table->setEditTriggers(QTableWidget::NoEditTriggers); m_table->setSelectionBehavior(QTableWidget::SelectRows);
     m_table->setSortingEnabled(true); m_table->setShowGrid(false); m_table->setAlternatingRowColors(true);
     m_table->setStyleSheet(
-        "QTableWidget { background:#fff; border:1px solid #d9dee5; border-radius:2px; font-size:12px; }"
-        "QTableWidget::item { padding:6px 9px; border-bottom:1px solid #edf0f2; }"
-        "QTableWidget::item:selected { background:#eaf1f6; color:#182230; }"
-        "QTableWidget::item:alternate { background:#f8fafb; }"
-        "QHeaderView::section { background:#f2f5f7; color:#52606d; font-weight:600; font-size:12px; padding:7px 9px; border:0; border-bottom:1px solid #d9dee5; }"
+        "QTableWidget { background:#fff; border:1px solid #dce4ec; border-radius:4px; font-size:12px; }"
+        "QTableWidget::item { padding:8px 10px; border-bottom:1px solid #edf1f5; }"
+        "QTableWidget::item:selected { background:#eaf5f7; color:#172b3d; }"
+        "QTableWidget::item:alternate { background:#f8fafc; }"
+        "QHeaderView::section { background:#f1f5f8; color:#52606d; font-weight:600; font-size:12px; padding:9px 10px; border:0; border-bottom:1px solid #dce4ec; }"
     );
     connect(m_table, &QTableWidget::cellClicked, this, &RangeGateTable::onItemClicked); layout->addWidget(m_table);
 }

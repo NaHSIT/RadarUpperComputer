@@ -63,14 +63,8 @@ SettingsPage::~SettingsPage() = default;
 void SettingsPage::loadSettings()
 {
     QSettings settings;
-    m_ipEdit->setText(settings.value("connection/ip", "192.168.100.2").toString());
-    m_portSpinBox->setValue(settings.value("connection/port", 1000).toInt());
-    m_themeCombo->setCurrentText(settings.value("display/theme", QStringLiteral("标准浅色")).toString());
-    m_languageCombo->setCurrentText(settings.value("display/language", QStringLiteral("中文")).toString());
-    m_refreshRateSpinBox->setValue(settings.value("display/refreshRate", 1).toInt());
-    m_exportPathEdit->setText(settings.value("export/path", "").toString());
-    m_exportFormatCombo->setCurrentText(settings.value("export/format", "CSV").toString());
-    m_autoExportCheckBox->setChecked(settings.value("export/autoExport", false).toBool());
+    m_ipEdit->setText(settings.value("connection/ip", "192.168.201.29").toString());
+    m_portSpinBox->setValue(settings.value("connection/port", 5000).toInt());
 }
 
 void SettingsPage::saveSettings()
@@ -78,12 +72,6 @@ void SettingsPage::saveSettings()
     QSettings settings;
     settings.setValue("connection/ip", m_ipEdit->text().trimmed());
     settings.setValue("connection/port", m_portSpinBox->value());
-    settings.setValue("display/theme", m_themeCombo->currentText());
-    settings.setValue("display/language", m_languageCombo->currentText());
-    settings.setValue("display/refreshRate", m_refreshRateSpinBox->value());
-    settings.setValue("export/path", m_exportPathEdit->text().trimmed());
-    settings.setValue("export/format", m_exportFormatCombo->currentText());
-    settings.setValue("export/autoExport", m_autoExportCheckBox->isChecked());
     settings.sync();
     emit settingsChanged();
 }
@@ -110,14 +98,8 @@ void SettingsPage::onSaveClicked()
 
 void SettingsPage::onResetClicked()
 {
-    m_ipEdit->setText("192.168.100.2");
-    m_portSpinBox->setValue(1000);
-    m_themeCombo->setCurrentText(QStringLiteral("标准浅色"));
-    m_languageCombo->setCurrentText(QStringLiteral("中文"));
-    m_refreshRateSpinBox->setValue(1);
-    m_exportPathEdit->clear();
-    m_exportFormatCombo->setCurrentText("CSV");
-    m_autoExportCheckBox->setChecked(false);
+    m_ipEdit->setText("192.168.201.29");
+    m_portSpinBox->setValue(5000);
 }
 
 void SettingsPage::onBrowseExportPathClicked()
@@ -134,14 +116,16 @@ void SettingsPage::setupUI()
     mainLayout->setSpacing(14);
     auto *title = new QLabel(QStringLiteral("系统配置"), this);
     title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;");
-    auto *subtitle = new QLabel(QStringLiteral("配置雷达连接、数据刷新与导出规则。连接参数在保存后立即用于下一次连接。"), this);
+    auto *subtitle = new QLabel(QStringLiteral("管理雷达连接地址。保存后的地址将作为客户端下次启动时的默认连接目标。"), this);
     subtitle->setStyleSheet("color:#667085; font-size:12px;");
     subtitle->setWordWrap(true);
     mainLayout->addWidget(title);
     mainLayout->addWidget(subtitle);
     createConnectionSection();
-    createDisplaySection();
-    createExportSection();
+    auto *note = new QLabel(QStringLiteral("说明：数据导出、界面语言和主题切换将在对应的数据服务和国际化模块接入后开放，当前版本不展示未实现的配置项。"), this);
+    note->setWordWrap(true);
+    note->setStyleSheet("color:#667085; background:#f8fafb; border:1px solid #d9dee5; padding:10px 12px; font-size:12px;");
+    mainLayout->addWidget(note);
     createButtons();
     mainLayout->addStretch();
 }

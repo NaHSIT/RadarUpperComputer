@@ -3,6 +3,9 @@
 
 #include <QWidget>
 
+class QLabel;
+class QTableWidget;
+
 /**
  * @brief 波束页面
  *
@@ -16,8 +19,15 @@ public:
     explicit BeamPage(QWidget *parent = nullptr);
     ~BeamPage() override;
 
+    void setConnectionState(bool connected);
+    void updateSimulationData(double cnrDb, int validGates, double confidence);
+
 private:
     void setupUI();
+
+    QLabel *m_statusLine = nullptr;
+    QTableWidget *m_beamTable = nullptr;
+    bool m_connected = false;
 };
 
 #endif // BEAMPAGE_H

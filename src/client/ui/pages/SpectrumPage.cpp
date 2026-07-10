@@ -1,34 +1,133 @@
 #include "SpectrumPage.h"
 
+#include <QComboBox>
 #include <QFrame>
-#include <QFormLayout>
-#include <QLabel>
-#include <QTableWidget>
 #include <QHeaderView>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QSplitter>
+#include <QTableWidget>
 #include <QVBoxLayout>
 
-namespace { QFrame *panel(QWidget *p) { auto *f = new QFrame(p); f->setObjectName("spectrumPanel"); f->setStyleSheet("QFrame#spectrumPanel { background:#fff; border:1px solid #d9dee5; border-radius:4px; }"); return f; } }
-SpectrumPage::SpectrumPage(QWidget *parent) : QWidget(parent) { setupUI(); }
+namespace {
+QFrame *createSection(QWidget *parent)
+{
+    auto *section = new QFrame(parent);
+    section->setObjectName("spectrumWorkspaceSection");
+    section->setStyleSheet("QFrame#spectrumWorkspaceSection { background:#ffffff; border:1px solid #d9dee5; border-radius:3px; }");
+    return section;
+}
+
+QLabel *createTitle(const QString &text, QWidget *parent)
+{
+    auto *title = new QLabel(text, parent);
+    title->setStyleSheet("color:#243447; font-size:14px; font-weight:600;");
+    return title;
+}
+
+void applyTableStyle(QTableWidget *table)
+{
+    table->verticalHeader()->hide();
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setShowGrid(false);
+    table->setStyleSheet(
+        "QTableWidget { border:1px solid #d9dee5; color:#344054; font-size:12px; }"
+        "QTableWidget::item { padding:8px 10px; border-bottom:1px solid #edf0f2; }"
+        "QHeaderView::section { background:#f2f5f7; color:#52606d; border:0; border-bottom:1px solid #d9dee5; padding:8px 10px; font-size:12px; font-weight:600; }"
+    );
+}
+}
+
+SpectrumPage::SpectrumPage(QWidget *parent) : QWidget(parent)
+{
+    setupUI();
+}
+
 SpectrumPage::~SpectrumPage() = default;
+
 void SpectrumPage::setupUI()
 {
-    auto *layout = new QVBoxLayout(this); layout->setContentsMargins(24, 20, 24, 18); layout->setSpacing(14);
-    auto *title = new QLabel(QStringLiteral("频谱诊断"), this); title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;"); layout->addWidget(title);
-    auto *subtitle = new QLabel(QStringLiteral("对当前测量链路的谱峰、信噪比与干扰特征进行诊断"), this);
-    subtitle->setStyleSheet("color:#667085; font-size:12px; padding-top:2px;");
+    auto *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(24, 20, 24, 18);
+    mainLayout->setSpacing(12);
+
+    auto *title = new QLabel(QStringLiteral("频谱诊断"), this);
+    title->setStyleSheet("color:#182230; font-size:22px; font-weight:600;");
+    auto *subtitle = new QLabel(QStringLiteral("查看原始频谱和诊断结果，用于定位低信噪比、杂波和谱峰异常。"), this);
     subtitle->setWordWrap(true);
-    layout->addWidget(subtitle);
-    auto *upper = new QHBoxLayout(); upper->setSpacing(14);
-    auto *spectrum = panel(this); auto *spectrumLayout = new QVBoxLayout(spectrum); spectrumLayout->setContentsMargins(14, 12, 14, 14);
-    auto *spectrumTitle = new QLabel(QStringLiteral("功率谱"), spectrum); spectrumTitle->setStyleSheet("color:#263442; font-size:14px; font-weight:600;"); spectrumLayout->addWidget(spectrumTitle);
-    auto *canvas = new QLabel(QStringLiteral("等待频谱数据"), spectrum); canvas->setAlignment(Qt::AlignCenter); canvas->setMinimumHeight(290); canvas->setStyleSheet("color:#7b8794; background:#f8fafb; border:1px dashed #cbd5df; font-size:13px;"); spectrumLayout->addWidget(canvas);
-    upper->addWidget(spectrum, 3);
-    auto *diagnosis = panel(this); auto *form = new QFormLayout(diagnosis); form->setContentsMargins(14, 12, 14, 14); form->setSpacing(12);
-    auto *diagTitle = new QLabel(QStringLiteral("诊断结论"), diagnosis); diagTitle->setStyleSheet("color:#263442; font-size:14px; font-weight:600;"); form->addRow(diagTitle);
-    const struct { QString label; QString value; QString color; } rows[] = {{QStringLiteral("谱峰检测"), QStringLiteral("等待数据"), "#667085"}, {QStringLiteral("杂波抑制"), QStringLiteral("等待数据"), "#667085"}, {QStringLiteral("信噪比"), QStringLiteral("-- dB"), "#182230"}, {QStringLiteral("频谱泄漏"), QStringLiteral("--"), "#667085"}};
-    for (const auto &row : rows) { auto *value = new QLabel(row.value, diagnosis); value->setStyleSheet(QStringLiteral("color:%1; font-size:13px; font-weight:600;").arg(row.color)); form->addRow(row.label + QStringLiteral("："), value); }
-    upper->addWidget(diagnosis, 1); layout->addLayout(upper);
-    auto *history = panel(this); auto *historyLayout = new QVBoxLayout(history); historyLayout->setContentsMargins(14, 12, 14, 14);
-    auto *historyTitle = new QLabel(QStringLiteral("诊断记录"), history); historyTitle->setStyleSheet("color:#263442; font-size:14px; font-weight:600;"); historyLayout->addWidget(historyTitle);
-    auto *table = new QTableWidget(0, 5, history); table->setHorizontalHeaderLabels({QStringLiteral("时间"), QStringLiteral("波束"), QStringLiteral("诊断项"), QStringLiteral("结果"), QStringLiteral("备注")}); table->verticalHeader()->hide(); table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); table->setMinimumHeight(170); table->setStyleSheet("QTableWidget { border:1px solid #d9dee5; font-size:12px; } QHeaderView::section { background:#f2f5f7; color:#52606d; padding:8px; border:0; border-bottom:1px solid #d9dee5; font-weight:600; }"); historyLayout->addWidget(table); layout->addWidget(history);
+    subtitle->setStyleSheet("color:#667085; font-size:13px;");
+    mainLayout->addWidget(title);
+    mainLayout->addWidget(subtitle);
+
+    auto *toolbar = new QHBoxLayout();
+    auto *beamLabel = new QLabel(QStringLiteral("波束："), this);
+    beamLabel->setStyleSheet("color:#475467; font-size:12px;");
+    auto *beamCombo = new QComboBox(this);
+    beamCombo->addItems({QStringLiteral("LOS 1"), QStringLiteral("LOS 2"), QStringLiteral("LOS 3"), QStringLiteral("LOS 4"), QStringLiteral("LOS 5")});
+    beamCombo->setToolTip(QStringLiteral("选择需要查看的波束。未连接时显示该波束的空状态。"));
+    beamCombo->setMinimumWidth(100);
+    beamCombo->setStyleSheet("QComboBox { min-height:28px; padding:0 8px; border:1px solid #bfc9d4; border-radius:3px; } QComboBox:disabled { color:#667085; background:#f2f5f7; }");
+    toolbar->addWidget(beamLabel);
+    toolbar->addWidget(beamCombo);
+    toolbar->addStretch();
+    auto *source = new QLabel(QStringLiteral("数据源：未连接 / LOS 1"), this);
+    source->setStyleSheet("color:#667085; background:#f2f5f7; border:1px solid #d9dee5; padding:6px 10px; font-size:12px;");
+    toolbar->addWidget(source);
+    mainLayout->addLayout(toolbar);
+
+    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    splitter->setChildrenCollapsible(false);
+    auto *plotSection = createSection(splitter);
+    auto *plotLayout = new QVBoxLayout(plotSection);
+    plotLayout->setContentsMargins(14, 12, 14, 14);
+    plotLayout->setSpacing(10);
+    plotLayout->addWidget(createTitle(QStringLiteral("功率谱"), plotSection));
+    auto *emptyPlot = new QLabel(QStringLiteral("LOS 1 暂无频谱数据"), plotSection);
+    emptyPlot->setAlignment(Qt::AlignCenter);
+    emptyPlot->setMinimumHeight(300);
+    emptyPlot->setStyleSheet("color:#667085; background:#f8fafb; border:1px solid #d9dee5; font-size:13px;");
+    plotLayout->addWidget(emptyPlot, 1);
+    splitter->addWidget(plotSection);
+
+    auto *resultSection = createSection(splitter);
+    auto *resultLayout = new QVBoxLayout(resultSection);
+    resultLayout->setContentsMargins(14, 12, 14, 14);
+    resultLayout->setSpacing(10);
+    resultLayout->addWidget(createTitle(QStringLiteral("诊断结果"), resultSection));
+    auto *resultTable = new QTableWidget(4, 2, resultSection);
+    resultTable->setHorizontalHeaderLabels({QStringLiteral("诊断项"), QStringLiteral("当前结果")});
+    applyTableStyle(resultTable);
+    resultTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    const QStringList labels = {QStringLiteral("谱峰检测"), QStringLiteral("杂波抑制"), QStringLiteral("信噪比"), QStringLiteral("频谱泄漏")};
+    for (int row = 0; row < labels.size(); ++row) {
+        resultTable->setItem(row, 0, new QTableWidgetItem(labels[row]));
+        resultTable->setItem(row, 1, new QTableWidgetItem(QStringLiteral("未连接")));
+        resultTable->item(row, 1)->setForeground(QColor("#667085"));
+    }
+    resultLayout->addWidget(resultTable);
+    resultLayout->addStretch();
+    splitter->addWidget(resultSection);
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 1);
+    mainLayout->addWidget(splitter, 1);
+
+    auto *historySection = createSection(this);
+    auto *historyLayout = new QVBoxLayout(historySection);
+    historyLayout->setContentsMargins(14, 12, 14, 14);
+    historyLayout->setSpacing(10);
+    historyLayout->addWidget(createTitle(QStringLiteral("诊断记录"), historySection));
+    auto *historyTable = new QTableWidget(0, 5, historySection);
+    historyTable->setHorizontalHeaderLabels({QStringLiteral("时间"), QStringLiteral("波束"), QStringLiteral("诊断项"), QStringLiteral("结果"), QStringLiteral("备注")});
+    applyTableStyle(historyTable);
+    historyTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    historyTable->setMinimumHeight(150);
+    historyLayout->addWidget(historyTable);
+    mainLayout->addWidget(historySection);
+
+    connect(beamCombo, &QComboBox::currentTextChanged, this,
+            [source, emptyPlot](const QString &beam) {
+                source->setText(QStringLiteral("数据源：未连接 / %1").arg(beam));
+                emptyPlot->setText(QStringLiteral("%1 暂无频谱数据").arg(beam));
+            });
 }

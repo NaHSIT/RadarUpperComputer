@@ -5,7 +5,10 @@
 #include <QVariantMap>
 #include <QByteArray>
 #include <QString>
+#include <QHash>
+#include <QVector>
 
+#include "algorithms/FiveBeamWindRetrieval.h"
 #include "domain/RadarTypes.h"
 #include "domain/RadarDevice.h"
 #include "domain/WindProfile.h"
@@ -49,6 +52,8 @@ private slots:
 private:
     void processFrame(const QByteArray &frame);
     bool updateWindProfile(const QByteArray &payload);
+    bool updateRadialScan(quint32 scanId, const QByteArray &payload);
+    bool applyFixedBeamRetrieval(quint32 scanId, const QVector<BeamObservation> &beams);
     void updateConnectionState(ConnectionState state);
 
     ConnectionState m_connectionState;
@@ -59,6 +64,8 @@ private:
     FrameParser *m_frameParser;
     uint32_t m_sequence;
     int m_port;
+    QHash<quint32, QVector<BeamObservation>> m_pendingRadialScans;
+    QHash<quint32, int> m_expectedRayCounts;
 };
 
 #endif // DEVICESERVICE_H

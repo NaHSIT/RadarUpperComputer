@@ -14,6 +14,8 @@ WindProfile::WindProfile(QObject *parent)
     , m_hubWindSpeedMps(0)
     , m_hubWindDirectionDeg(0)
     , m_rawsMps(0)
+    , m_retrievalMethod(WindRetrievalMethod::LegacyProfile)
+    , m_sourceScanId(0)
 {
 }
 
@@ -34,6 +36,8 @@ void WindProfile::setTiltDeg(double tilt) { m_tiltDeg = tilt; }
 void WindProfile::setHubWindSpeedMps(double speed) { m_hubWindSpeedMps = speed; }
 void WindProfile::setHubWindDirectionDeg(double direction) { m_hubWindDirectionDeg = direction; }
 void WindProfile::setRawsMps(double raws) { m_rawsMps = raws; }
+void WindProfile::setRetrievalMethod(WindRetrievalMethod method) { m_retrievalMethod = method; }
+void WindProfile::setSourceScanId(quint32 scanId) { m_sourceScanId = scanId; }
 
 void WindProfile::addRangeGate(RangeGate *gate)
 {
@@ -67,7 +71,11 @@ int WindProfile::validGateCount() const
 {
     int count = 0;
     for (const auto &gate : m_rangeGates) {
-        if (gate->confidence() >= 50) {
+        const QVector<StatusCode> flags = gate->statusFlags();
+        const bool qualityControlPassed = flags.isEmpty()
+            ? gate->confidence() >= 50.0
+            : flags.contains(StatusCode::Valid);
+        if (qualityControlPassed) {
             count++;
         }
     }
@@ -84,10 +92,16 @@ double WindProfile::confidence() const
 {
     if (m_rangeGates.isEmpty()) return 0;
     double sum = 0;
+    int count = 0;
     for (const auto &gate : m_rangeGates) {
+        const QVector<StatusCode> flags = gate->statusFlags();
+        const bool valid = flags.isEmpty() ? gate->confidence() >= 50.0
+                                           : flags.contains(StatusCode::Valid);
+        if (!valid) continue;
         sum += gate->confidence();
+        ++count;
     }
-    return sum / m_rangeGates.size();
+    return count > 0 ? sum / count : 0.0;
 }
 
 RangeGate* WindProfile::findGateByHeight(double height) const
@@ -124,6 +138,8 @@ QJsonObject WindProfile::toJson() const
     json["hubWindSpeedMps"] = m_hubWindSpeedMps;
     json["hubWindDirectionDeg"] = m_hubWindDirectionDeg;
     json["rawsMps"] = m_rawsMps;
+    json["retrievalMethod"] = static_cast<int>(m_retrievalMethod);
+    json["sourceScanId"] = static_cast<qint64>(m_sourceScanId);
 
     QJsonArray gatesArray;
     for (const auto &gate : m_rangeGates) {
@@ -153,6 +169,8 @@ void WindProfile::fromJson(const QJsonObject &json)
     m_hubWindSpeedMps = json["hubWindSpeedMps"].toDouble();
     m_hubWindDirectionDeg = json["hubWindDirectionDeg"].toDouble();
     m_rawsMps = json["rawsMps"].toDouble();
+    m_retrievalMethod = static_cast<WindRetrievalMethod>(json["retrievalMethod"].toInt());
+    m_sourceScanId = static_cast<quint32>(json["sourceScanId"].toInteger());
 
     clearRangeGates();
     for (const auto &gateJson : json["rangeGates"].toArray()) {

@@ -33,11 +33,22 @@ enum class TimeSource {
 };
 
 enum class BeamId {
-    LOS1 = 0,
-    LOS2 = 1,
-    LOS3 = 2,
-    LOS4 = 3,
-    LOS5 = 4
+    Vertical = 0,
+    Northeast = 1,
+    Southeast = 2,
+    Southwest = 3,
+    Northwest = 4,
+    LOS1 = Vertical,
+    LOS2 = Northeast,
+    LOS3 = Southeast,
+    LOS4 = Southwest,
+    LOS5 = Northwest
+};
+
+enum class WindRetrievalMethod {
+    LegacyProfile = 0,
+    FiveBeamLeastSquares = 1,
+    PyArtVad = 2
 };
 
 enum class BeamStatus {
@@ -96,6 +107,7 @@ enum class CommandCode : uint16_t {
     QueryDeviceHealth = 0x0103,
     QueryParameters = 0x0104,
     QueryAlarmHistory = 0x0105,
+    QueryRadialScan = 0x0106,
 
     ControlStartMeasure = 0x0200,
     ControlStopMeasure = 0x0201,
@@ -108,6 +120,9 @@ enum class CommandCode : uint16_t {
     PushDeviceHealth = 0x8102,
     PushSpectrum = 0x8103,
     PushAlarm = 0x8104,
+    PushRadialRay = 0x8105,
+    PushWindProfileV2 = 0x8106,
+    PushWindGrid = 0x8107,
 
     ResponseSuccess = 0x0000,
     ResponseError = 0x0001

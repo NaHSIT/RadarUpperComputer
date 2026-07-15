@@ -100,8 +100,15 @@ void SpectrumPage::setupUI()
     applyTableStyle(resultTable);
     resultTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     const QStringList labels = {QStringLiteral("谱峰检测"), QStringLiteral("杂波抑制"), QStringLiteral("信噪比"), QStringLiteral("频谱泄漏")};
+    const QStringList help = {
+        QStringLiteral("是否从多普勒功率谱中找到可靠回波峰。"),
+        QStringLiteral("直流、地物和固定目标杂波是否已经被识别和抑制。"),
+        QStringLiteral("有效谱峰功率与噪声底的比值，用于判断径向速度可信性。"),
+        QStringLiteral("FFT 能量向相邻频点扩散的程度，可由截断和窗函数引起。")
+    };
     for (int row = 0; row < labels.size(); ++row) {
         resultTable->setItem(row, 0, new QTableWidgetItem(labels[row]));
+        resultTable->item(row, 0)->setToolTip(help.at(row));
         resultTable->setItem(row, 1, new QTableWidgetItem(QStringLiteral("未连接")));
         resultTable->item(row, 1)->setForeground(QColor("#667085"));
     }

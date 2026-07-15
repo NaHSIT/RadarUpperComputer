@@ -20,7 +20,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets Sql)
 find_package(Qt6 QUIET COMPONENTS WebSockets)
 find_package(Qt6 QUIET COMPONENTS Charts)
 find_package(Qt6 QUIET COMPONENTS SerialPort)

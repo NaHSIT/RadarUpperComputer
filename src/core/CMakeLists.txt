@@ -11,6 +11,8 @@ set(CORE_SOURCES
     communication/FrameParser.cpp
     communication/TcpDataSource.cpp
     communication/WebSocketManager.cpp
+    algorithms/PyArtWindService.cpp
+    algorithms/FiveBeamWindRetrieval.cpp
 )
 
 set(CORE_HEADERS
@@ -28,6 +30,8 @@ set(CORE_HEADERS
     communication/FrameParser.h
     communication/TcpDataSource.h
     communication/WebSocketManager.h
+    algorithms/PyArtWindService.h
+    algorithms/FiveBeamWindRetrieval.h
 )
 
 add_library(radar-core STATIC
@@ -44,6 +48,7 @@ target_link_libraries(radar-core
     PUBLIC
         Qt6::Core
         Qt6::Network
+        Qt6::Sql
 )
 
 if(TARGET Qt6::WebSockets)

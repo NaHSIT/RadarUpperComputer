@@ -5,6 +5,7 @@
 #include <QTableWidget>
 #include <QVector>
 #include <QString>
+#include <QStringList>
 
 class RangeGateTable : public QWidget
 {
@@ -17,13 +18,17 @@ public:
         double heightM;
         double windSpeedMps;
         double windDirectionDeg;
+        double eastwardMps;
+        double northwardMps;
+        double upwardMps;
         double turbulenceIntensity;
         double verticalShear;
         double horizontalShear;
         double cnrAvg;
         int validBeams;
+        double retrievalResidualMps;
         double confidence;
-        QString status;
+        QVector<double> radialVelocityMps;
     };
 
     explicit RangeGateTable(QWidget *parent = nullptr);
@@ -31,6 +36,9 @@ public:
 
     void setGateData(const QVector<GateData> &data);
     void clear();
+
+protected:
+    void showEvent(QShowEvent *event) override;
 
 signals:
     void gateClicked(int gateIndex);
@@ -44,6 +52,7 @@ private:
 
     QTableWidget *m_table;
     QVector<GateData> m_gateData;
+    QStringList m_headerHelp;
 };
 
 #endif // RANGEGATETABLE_H

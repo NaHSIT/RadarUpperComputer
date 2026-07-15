@@ -1,188 +1,288 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-雷达测试服务器
-用于测试上位机所有功能
+"""Five-beam wind-profiler simulator for the desktop upper computer."""
 
-使用方法：
-    python3 test_server.py
+from __future__ import annotations
 
-然后在上位机中连接 127.0.0.1:5000
-"""
-
+import argparse
+import math
+import random
 import socket
 import struct
-import threading
 import time
-import random
+from dataclasses import dataclass
 
-# 协议常量
+
 FRAME_HEADER = 0xAA55
 FRAME_TAIL = 0x55AA
 
-# 命令码
-CMD_HEARTBEAT = 0x0001
-CMD_STATUS_QUERY = 0x0002
-CMD_STATUS_REPORT = 0x0003
-CMD_VERSION_QUERY = 0x0006
-CMD_VERSION_REPORT = 0x0007
-CMD_START_MEASURE = 0x0200
-CMD_STOP_MEASURE = 0x0201
-CMD_SWITCH_BEAM = 0x0202
-CMD_WIND_DATA = 0x0301
-CMD_ACK = 0x0080
+RESPONSE_SUCCESS = 0x0000
+QUERY_DEVICE_INFO = 0x0100
+QUERY_WIND_PROFILE = 0x0101
+QUERY_RADIAL_SCAN = 0x0106
+START_MEASURE = 0x0200
+STOP_MEASURE = 0x0201
+PUSH_WIND_PROFILE = 0x8100
+PUSH_RADIAL_RAY = 0x8105
 
-# CRC16计算
-def calc_crc16(data):
+GATE_COUNT = 30
+HEIGHT_SPACING_M = 10.0
+FIRST_HEIGHT_M = 10.0
+FIELD_MASK = 0x37  # radial velocity, CNR, spectrum width, confidence, quality flags
+
+
+@dataclass(frozen=True)
+class BeamGeometry:
+    beam_id: int
+    name: str
+    azimuth_deg: float
+    elevation_deg: float
+    carrier_hz: float
+
+
+# Elevation is measured up from the horizontal plane. The inclined beams are
+# 15 degrees away from vertical, hence elevation=75 degrees.
+BEAMS = (
+    BeamGeometry(0, "VERT", 0.0, 90.0, 23.8e9),
+    BeamGeometry(1, "NE", 45.0, 75.0, 23.9e9),
+    BeamGeometry(2, "SE", 135.0, 75.0, 24.0e9),
+    BeamGeometry(3, "SW", 225.0, 75.0, 24.1e9),
+    BeamGeometry(4, "NW", 315.0, 75.0, 24.2e9),
+)
+
+
+def crc16_modbus(data: bytes) -> int:
     crc = 0xFFFF
     for byte in data:
-        crc ^= (byte << 8)
+        crc ^= byte
         for _ in range(8):
-            crc = (crc << 1) ^ 0x1021 if crc & 0x8000 else crc << 1
-            crc &= 0xFFFF
-    return crc
+            crc = (crc >> 1) ^ 0xA001 if crc & 1 else crc >> 1
+    return crc & 0xFFFF
 
-# 构建帧
-def build_frame(cmd, seq, payload=b''):
-    frame = bytearray()
-    frame.extend(struct.pack('>H', FRAME_HEADER))
+
+def build_frame(command: int, sequence: int, payload: bytes = b"") -> bytes:
     length = 2 + 4 + len(payload) + 2
-    frame.extend(struct.pack('>H', length))
-    frame.extend(struct.pack('>H', cmd))
-    frame.extend(struct.pack('>I', seq))
-    frame.extend(payload)
-    crc = calc_crc16(bytes(frame[2:]))
-    frame.extend(struct.pack('>H', crc))
-    frame.extend(struct.pack('>H', FRAME_TAIL))
-    return bytes(frame)
+    prefix = struct.pack(">HHHI", FRAME_HEADER, length, command, sequence) + payload
+    return prefix + struct.pack(">HH", crc16_modbus(prefix), FRAME_TAIL)
 
-# 生成风场数据
-def generate_wind_data():
-    payload = bytearray()
-    timestamp = int(time.time() * 1000000)
-    payload.extend(struct.pack('>Q', timestamp))
-    payload.append(0)  # 波束索引
-    payload.extend(struct.pack('>H', 30))  # 距离门数
-    payload.extend(struct.pack('>f', 10.0))  # 分辨率
-    payload.extend(struct.pack('>f', 300.0))  # 最大距离
-    payload.extend(b'\x00\x00\x00')  # 保留
 
-    for i in range(30):
-        speed = 5.0 + i * 0.3 + random.uniform(-0.5, 0.5)
-        payload.extend(struct.pack('>f', speed))
+def extract_frames(buffer: bytearray) -> list[tuple[int, int, bytes]]:
+    frames: list[tuple[int, int, bytes]] = []
+    marker = struct.pack(">H", FRAME_HEADER)
+    while True:
+        position = buffer.find(marker)
+        if position < 0:
+            if len(buffer) > 1:
+                del buffer[:-1]
+            return frames
+        if position:
+            del buffer[:position]
+        if len(buffer) < 14:
+            return frames
+        length = struct.unpack_from(">H", buffer, 2)[0]
+        frame_size = 4 + length + 2
+        if frame_size < 14 or frame_size > 4096:
+            del buffer[0]
+            continue
+        if len(buffer) < frame_size:
+            return frames
+        frame = bytes(buffer[:frame_size])
+        del buffer[:frame_size]
+        stored_crc, tail = struct.unpack_from(">HH", frame, frame_size - 4)
+        if tail != FRAME_TAIL or stored_crc != crc16_modbus(frame[:-4]):
+            print("丢弃CRC或帧尾错误的客户端帧")
+            continue
+        command, sequence = struct.unpack_from(">HI", frame, 4)
+        frames.append((command, sequence, frame[10:-4]))
 
-    for i in range(30):
-        direction = 180.0 + random.uniform(-10, 10)
-        payload.extend(struct.pack('>f', direction))
 
-    for i in range(30):
-        vspeed = random.uniform(-0.5, 0.5)
-        payload.extend(struct.pack('>f', vspeed))
+def wind_truth(height_m: float, elapsed_s: float) -> tuple[float, float, float]:
+    """Return an ENU wind vector with realistic shear, veer and vertical motion."""
+    speed = 5.8 + 0.010 * height_m + 0.65 * math.sin(elapsed_s / 24.0 + height_m / 130.0)
+    direction_from_deg = 218.0 + 0.055 * height_m + 4.0 * math.sin(elapsed_s / 50.0)
+    direction_rad = math.radians(direction_from_deg)
+    eastward = -speed * math.sin(direction_rad)
+    northward = -speed * math.cos(direction_rad)
+    upward = 0.28 * math.sin(elapsed_s / 18.0 + height_m / 85.0)
+    return eastward, northward, upward
 
-    for i in range(30):
-        conf = int(95 - i * 2 + random.uniform(-5, 5))
-        payload.append(max(0, min(100, conf)))
 
-    payload.extend(struct.pack('>f', 25.0))  # SNR
-    payload.extend(struct.pack('>f', 0.1))   # 湍流
+def radial_velocity(beam: BeamGeometry, vector: tuple[float, float, float]) -> float:
+    azimuth = math.radians(beam.azimuth_deg)
+    elevation = math.radians(beam.elevation_deg)
+    eastward, northward, upward = vector
+    return (
+        eastward * math.cos(elevation) * math.sin(azimuth)
+        + northward * math.cos(elevation) * math.cos(azimuth)
+        + upward * math.sin(elevation)
+    )
 
-    return bytes(payload)
 
-# 处理客户端
-def handle_client(client_socket, addr):
-    print(f"客户端连接: {addr}")
-    seq = 0
+def generate_scan(scan_id: int, started_monotonic: float) -> tuple[list[bytes], bytes, tuple[float, float, float]]:
+    elapsed = time.monotonic() - started_monotonic
+    heights = [FIRST_HEIGHT_M + index * HEIGHT_SPACING_M for index in range(GATE_COUNT)]
+    truth = [wind_truth(height, elapsed) for height in heights]
+    rng = random.Random(scan_id)
+    ray_payloads: list[bytes] = []
+    all_cnr: list[float] = []
+
+    for ray_index, beam in enumerate(BEAMS):
+        elevation_rad = math.radians(beam.elevation_deg)
+        start_range = FIRST_HEIGHT_M / math.sin(elevation_rad)
+        gate_spacing = HEIGHT_SPACING_M / math.sin(elevation_rad)
+        radial_values: list[float] = []
+        cnr_values: list[float] = []
+        widths: list[float] = []
+        confidences: list[int] = []
+        quality_flags: list[int] = []
+
+        for gate, (height, vector) in enumerate(zip(heights, truth)):
+            noise_sigma = 0.025 + height / 18000.0
+            radial_values.append(radial_velocity(beam, vector) + rng.gauss(0.0, noise_sigma))
+            cnr = 19.0 - 0.035 * height + 1.2 * math.sin(elapsed / 14.0 + gate / 5.0 + ray_index)
+            cnr_values.append(cnr)
+            all_cnr.append(cnr)
+            widths.append(0.16 + 0.05 * abs(math.sin(height / 90.0 + elapsed / 30.0)))
+            confidence = max(0, min(100, round(96.0 - max(0.0, 8.0 - cnr) * 2.5)))
+            confidences.append(confidence)
+            quality_flags.append(0 if confidence >= 50 else 1)
+
+        header = struct.pack(
+            "<HHHBBffffffdIIII",
+            ray_index,
+            len(BEAMS),
+            GATE_COUNT,
+            beam.beam_id,
+            0,
+            beam.azimuth_deg,
+            beam.elevation_deg,
+            start_range,
+            gate_spacing,
+            20000.0,
+            15.0,
+            beam.carrier_hz,
+            1,
+            FIELD_MASK,
+            0,
+            0,
+        )
+        arrays = bytearray()
+        arrays.extend(struct.pack(f"<{GATE_COUNT}h", *(round(value * 100.0) for value in radial_values)))
+        arrays.extend(struct.pack(f"<{GATE_COUNT}h", *(round(value * 100.0) for value in cnr_values)))
+        arrays.extend(struct.pack(f"<{GATE_COUNT}H", *(round(value * 100.0) for value in widths)))
+        arrays.extend(bytes(confidences))
+        arrays.extend(struct.pack(f"<{GATE_COUNT}H", *quality_flags))
+        ray_payloads.append(header + arrays)
+
+    speeds: list[float] = []
+    directions: list[float] = []
+    upward_values: list[float] = []
+    confidences: list[int] = []
+    for height, (eastward, northward, upward) in zip(heights, truth):
+        speeds.append(math.hypot(eastward, northward))
+        directions.append(math.degrees(math.atan2(-eastward, -northward)) % 360.0)
+        upward_values.append(upward)
+        confidences.append(max(50, min(100, round(96.0 - height / 30.0))))
+
+    legacy = bytearray()
+    legacy.extend(struct.pack("<Q", int(time.time() * 1000)))
+    legacy.append(0)
+    legacy.extend(struct.pack(">H", GATE_COUNT))
+    legacy.extend(struct.pack("<ff", HEIGHT_SPACING_M, heights[-1]))
+    legacy.extend(b"\x00\x00\x00")
+    legacy.extend(struct.pack(f"<{GATE_COUNT}f", *speeds))
+    legacy.extend(struct.pack(f"<{GATE_COUNT}f", *directions))
+    legacy.extend(struct.pack(f"<{GATE_COUNT}f", *upward_values))
+    legacy.extend(bytes(confidences))
+    legacy.extend(struct.pack("<ff", sum(all_cnr) / len(all_cnr), 0.08))
+    return ray_payloads, bytes(legacy), truth[0]
+
+
+def send_products(client: socket.socket, scan_id: int, started_monotonic: float, include_legacy: bool = True) -> None:
+    rays, legacy, first_truth = generate_scan(scan_id, started_monotonic)
+    if include_legacy:
+        client.sendall(build_frame(PUSH_WIND_PROFILE, scan_id, legacy))
+    for payload in rays:
+        client.sendall(build_frame(PUSH_RADIAL_RAY, scan_id, payload))
+    eastward, northward, upward = first_truth
+    print(
+        f"扫描 {scan_id}: 五束×{GATE_COUNT}门, "
+        f"首层真值 u={eastward:.2f}, v={northward:.2f}, w={upward:.2f} m/s"
+    )
+
+
+def serve_client(client: socket.socket, address: tuple[str, int], started_monotonic: float) -> None:
+    print(f"客户端连接: {address[0]}:{address[1]}")
+    client.settimeout(0.2)
+    receive_buffer = bytearray()
     measuring = False
-
+    radial_mode = False
+    scan_id = 1
+    next_push = time.monotonic()
     try:
         while True:
-            data = client_socket.recv(4096)
-            if not data:
+            try:
+                chunk = client.recv(4096)
+                if not chunk:
+                    break
+                receive_buffer.extend(chunk)
+            except socket.timeout:
+                pass
+
+            for command, sequence, _ in extract_frames(receive_buffer):
+                print(f"收到命令: 0x{command:04X}, sequence={sequence}")
+                if command == START_MEASURE:
+                    measuring = True
+                    next_push = time.monotonic()
+                    client.sendall(build_frame(RESPONSE_SUCCESS, sequence))
+                elif command == STOP_MEASURE:
+                    measuring = False
+                    client.sendall(build_frame(RESPONSE_SUCCESS, sequence))
+                elif command == QUERY_WIND_PROFILE:
+                    _, legacy, _ = generate_scan(scan_id, started_monotonic)
+                    client.sendall(build_frame(PUSH_WIND_PROFILE, scan_id, legacy))
+                elif command == QUERY_RADIAL_SCAN:
+                    radial_mode = True
+                    send_products(client, scan_id, started_monotonic, include_legacy=False)
+                    scan_id += 1
+                elif command == QUERY_DEVICE_INFO:
+                    client.sendall(build_frame(RESPONSE_SUCCESS, sequence))
+                else:
+                    client.sendall(build_frame(RESPONSE_SUCCESS, sequence))
+
+            now = time.monotonic()
+            if measuring and now >= next_push:
+                send_products(client, scan_id, started_monotonic, include_legacy=not radial_mode)
+                scan_id += 1
+                next_push = now + 1.0
+    except (ConnectionError, OSError) as exc:
+        print(f"连接结束: {exc}")
+    finally:
+        client.close()
+        print(f"客户端断开: {address[0]}:{address[1]}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Five-beam wind-profiler simulator")
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", default=5000, type=int)
+    args = parser.parse_args()
+    started_monotonic = time.monotonic()
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((args.host, args.port))
+        server.listen(5)
+        print("测风雷达五波束仿真器")
+        print(f"监听 {args.host}:{args.port}")
+        print("波束: 法向90° + 45/135/225/315°方位、75°仰角")
+        while True:
+            try:
+                client, address = server.accept()
+                serve_client(client, address, started_monotonic)
+            except KeyboardInterrupt:
+                print("\n仿真器已停止")
                 break
 
-            # 解析命令
-            if len(data) >= 14:
-                cmd = struct.unpack('>H', data[4:6])[0]
-                seq_num = struct.unpack('>I', data[6:10])[0]
-                print(f"收到命令: 0x{cmd:04X}")
 
-                # 响应
-                if cmd == CMD_HEARTBEAT:
-                    resp = build_frame(CMD_ACK, seq_num)
-                    client_socket.sendall(resp)
-                    print("发送心跳响应")
-
-                elif cmd == CMD_STATUS_QUERY:
-                    status = bytearray()
-                    status.append(2)  # state
-                    status.extend(struct.pack('>f', 35.0))  # temperature
-                    status.extend(struct.pack('>f', 12.0))  # voltage
-                    resp = build_frame(CMD_STATUS_REPORT, seq_num, bytes(status))
-                    client_socket.sendall(resp)
-                    print("发送状态响应")
-
-                elif cmd == CMD_VERSION_QUERY:
-                    version = b'1.0.0 Test Server'
-                    resp = build_frame(CMD_VERSION_REPORT, seq_num, version)
-                    client_socket.sendall(resp)
-                    print("发送版本响应")
-
-                elif cmd == CMD_START_MEASURE:
-                    measuring = True
-                    resp = build_frame(CMD_ACK, seq_num)
-                    client_socket.sendall(resp)
-                    print("开始测量")
-
-                elif cmd == CMD_STOP_MEASURE:
-                    measuring = False
-                    resp = build_frame(CMD_ACK, seq_num)
-                    client_socket.sendall(resp)
-                    print("停止测量")
-
-                elif cmd == CMD_SWITCH_BEAM:
-                    beam = data[10] if len(data) > 10 else 0
-                    resp = build_frame(CMD_ACK, seq_num)
-                    client_socket.sendall(resp)
-                    print(f"切换波束: {beam}")
-
-            # 发送风场数据
-            if measuring:
-                wind_data = generate_wind_data()
-                resp = build_frame(CMD_WIND_DATA, seq, wind_data)
-                client_socket.sendall(resp)
-                seq += 1
-
-            time.sleep(0.1)  # 10Hz
-
-    except Exception as e:
-        print(f"错误: {e}")
-    finally:
-        print(f"客户端断开: {addr}")
-        client_socket.close()
-
-# 主函数
-def main():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(('0.0.0.0', 5000))
-    server.listen(5)
-
-    print("=" * 50)
-    print("雷达测试服务器")
-    print("=" * 50)
-    print("监听端口: 5000")
-    print("在上位机中连接 127.0.0.1:5000")
-    print("按 Ctrl+C 停止")
-    print("=" * 50)
-
-    try:
-        while True:
-            client, addr = server.accept()
-            thread = threading.Thread(target=handle_client, args=(client, addr))
-            thread.daemon = True
-            thread.start()
-    except KeyboardInterrupt:
-        print("\n服务器已停止")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

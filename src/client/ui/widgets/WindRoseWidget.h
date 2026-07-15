@@ -6,6 +6,7 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QVariantAnimation>
 
 class WindRoseWidget : public QWidget
 {
@@ -29,6 +30,7 @@ private:
 
     double m_currentDirection;
     QVector<double> m_directionHistory;
+    QVariantAnimation *m_directionAnimation;
 };
 
 #endif // WINDROSEWIDGET_H

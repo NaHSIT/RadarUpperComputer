@@ -9,13 +9,18 @@
 
 class DeviceService;
 class AlarmService;
+class PyArtWindService;
+class DataService;
 class NavigationBar;
 class DashboardPage;
 class WindFieldPage;
 class BeamPage;
 class SpectrumPage;
 class DeviceHealthPage;
+class DeviceStatusPage;
+class DataQualityPage;
 class SettingsPage;
+class QTimer;
 
 /**
  * @brief 主窗口
@@ -33,9 +38,14 @@ public:
     // 服务设置
     void setDeviceService(DeviceService *service);
     void setAlarmService(AlarmService *service);
+    void setPyArtWindService(PyArtWindService *service);
+    void setDataService(DataService *service);
 
     // 页面导航
     void navigateTo(int pageIndex);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 signals:
     void pageChanged(int pageIndex);
@@ -53,10 +63,17 @@ private:
     void setupContentArea();
     void createPages();
     void appendLog(const QString &message);
+    void refreshDashboardSpeedHistory(int seconds);
+    void refreshDashboardDirectionHistory(int seconds);
+    void refreshWindFieldSpeedHistory(int seconds);
+    void refreshWindFieldDirectionHistory(int seconds);
+    void refreshAllWindHistory();
 
     // 服务
     DeviceService *m_deviceService;
     AlarmService *m_alarmService;
+    PyArtWindService *m_pyArtWindService;
+    DataService *m_dataService;
 
     // UI 组件
     NavigationBar *m_navigationBar;
@@ -64,6 +81,7 @@ private:
     QLabel *m_connectionStatusLabel;
     QLabel *m_alarmCountLabel;
     QPlainTextEdit *m_eventLog;
+    QTimer *m_historyRefreshTimer;
 
     // 页面
     DashboardPage *m_dashboardPage;
@@ -71,14 +89,14 @@ private:
     BeamPage *m_beamPage;
     SpectrumPage *m_spectrumPage;
     DeviceHealthPage *m_deviceHealthPage;
+    DeviceStatusPage *m_deviceStatusPage;
+    DataQualityPage *m_dataQualityPage;
     SettingsPage *m_settingsPage;
 
     // 页面索引
     enum PageIndex {
         PAGE_DASHBOARD = 0,
         PAGE_WIND_FIELD,
-        PAGE_BEAM,
-        PAGE_SPECTRUM,
         PAGE_DEVICE_HEALTH,
         PAGE_SETTINGS
     };

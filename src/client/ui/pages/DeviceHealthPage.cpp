@@ -106,6 +106,10 @@ void DeviceHealthPage::setupUI()
     subtitle->setWordWrap(true);
     mainLayout->addWidget(title);
     mainLayout->addWidget(subtitle);
+    auto *source = new QLabel(QStringLiteral("数据来源  ·  设备遥测协议（待 Zynq 端接入）"), this);
+    source->setStyleSheet("color:#52606d; background:#edf3f7; border:1px solid #d7e3ec; padding:7px 10px; font-size:12px;");
+    source->setToolTip(QStringLiteral("温度、供电、姿态、存储和时间同步值应来自雷达工业主板遥测帧；当前协议尚未完成接入。"));
+    mainLayout->addWidget(source);
     createDeviceInfoSection();
     createTemperatureSection();
     createPowerSection();
@@ -144,6 +148,8 @@ void DeviceHealthPage::createTemperatureSection()
     grid->setHorizontalSpacing(10);
     m_cpuTempCard = new MetricCard(section); m_cpuTempCard->setData(QStringLiteral("CPU 温度"), 0.0, QStringLiteral("°C"));
     m_fpgaTempCard = new MetricCard(section); m_fpgaTempCard->setData(QStringLiteral("FPGA 温度"), 0.0, QStringLiteral("°C"));
+    m_cpuTempCard->setToolTip(QStringLiteral("工业主板 CPU 温度；>60°C 警告，>70°C 异常。数据来自设备遥测。"));
+    m_fpgaTempCard->setToolTip(QStringLiteral("Zynq/FPGA 片上温度；>60°C 警告，>70°C 异常。数据来自设备遥测。"));
     grid->addWidget(m_cpuTempCard, 0, 0);
     grid->addWidget(m_fpgaTempCard, 0, 1);
     static_cast<QVBoxLayout *>(section->layout())->addLayout(grid);
@@ -157,6 +163,8 @@ void DeviceHealthPage::createPowerSection()
     grid->setHorizontalSpacing(10);
     m_ohVoltageCard = new MetricCard(section); m_ohVoltageCard->setData(QStringLiteral("光端机电压"), 0.0, "V");
     m_ohCurrentCard = new MetricCard(section); m_ohCurrentCard->setData(QStringLiteral("光端机电流"), 0.0, "A");
+    m_ohVoltageCard->setToolTip(QStringLiteral("光端机供电电压，当前规则 22–26 V 为正常。数据来自电源监测遥测。"));
+    m_ohCurrentCard->setToolTip(QStringLiteral("光端机实时工作电流。异常阈值待根据实机功耗标定。"));
     grid->addWidget(m_ohVoltageCard, 0, 0);
     grid->addWidget(m_ohCurrentCard, 0, 1);
     static_cast<QVBoxLayout *>(section->layout())->addLayout(grid);
@@ -171,6 +179,9 @@ void DeviceHealthPage::createAttitudeSection()
     m_rollCard = new MetricCard(section); m_rollCard->setData(QStringLiteral("横滚角"), 0.0, QStringLiteral("°"));
     m_tiltCard = new MetricCard(section); m_tiltCard->setData(QStringLiteral("俯仰角"), 0.0, QStringLiteral("°"));
     m_storageCard = new MetricCard(section); m_storageCard->setData(QStringLiteral("磁盘使用率"), 0.0, "%");
+    m_rollCard->setToolTip(QStringLiteral("雷达绕前后轴的横滚角；绝对值 >2° 警告，>5° 异常。"));
+    m_tiltCard->setToolTip(QStringLiteral("雷达前后俯仰偏差；绝对值 >2° 警告，>5° 异常。"));
+    m_storageCard->setToolTip(QStringLiteral("雷达主板数据盘使用比例；>70% 警告，>90% 异常。"));
     grid->addWidget(m_rollCard, 0, 0);
     grid->addWidget(m_tiltCard, 0, 1);
     grid->addWidget(m_storageCard, 0, 2);

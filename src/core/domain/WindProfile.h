@@ -35,6 +35,8 @@ public:
     double hubWindSpeedMps() const { return m_hubWindSpeedMps; }
     double hubWindDirectionDeg() const { return m_hubWindDirectionDeg; }
     double rawsMps() const { return m_rawsMps; }
+    WindRetrievalMethod retrievalMethod() const { return m_retrievalMethod; }
+    quint32 sourceScanId() const { return m_sourceScanId; }
     QVector<RangeGate*> rangeGates() const { return m_rangeGates; }
     QVector<BeamState*> beamStates() const { return m_beamStates; }
     int validGateCount() const;
@@ -53,6 +55,8 @@ public:
     void setHubWindSpeedMps(double speed);
     void setHubWindDirectionDeg(double direction);
     void setRawsMps(double raws);
+    void setRetrievalMethod(WindRetrievalMethod method);
+    void setSourceScanId(quint32 scanId);
 
     // 数据操作
     void addRangeGate(RangeGate *gate);
@@ -85,6 +89,8 @@ private:
     double m_hubWindSpeedMps;
     double m_hubWindDirectionDeg;
     double m_rawsMps;
+    WindRetrievalMethod m_retrievalMethod;
+    quint32 m_sourceScanId;
     QVector<RangeGate*> m_rangeGates;
     QVector<BeamState*> m_beamStates;
 };

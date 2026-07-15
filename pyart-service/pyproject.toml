@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radar-pyart-service"
+version = "0.1.0"
+description = "Py-ART wind retrieval worker for RadarUpperComputer"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "arm-pyart>=2.2,<2.3",
+  "numpy>=1.24,<3",
+  "matplotlib>=3.7,<4",
+  "netCDF4>=1.6,<2",
+]
+
+[project.scripts]
+radar-pyart-worker = "radar_pyart_service.worker:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

@@ -8,6 +8,11 @@ RangeGate::RangeGate(QObject *parent)
     , m_heightM(0)
     , m_windSpeedMps(0)
     , m_windDirectionDeg(0)
+    , m_eastwardWindMps(0)
+    , m_northwardWindMps(0)
+    , m_upwardWindMps(0)
+    , m_retrievalResidualMps(0)
+    , m_validBeamCount(0)
     , m_turbulenceIntensity(0)
     , m_verticalShear(0)
     , m_horizontalShear(0)
@@ -25,6 +30,11 @@ void RangeGate::setDistanceM(double distance) { m_distanceM = distance; }
 void RangeGate::setHeightM(double height) { m_heightM = height; }
 void RangeGate::setWindSpeedMps(double speed) { m_windSpeedMps = speed; }
 void RangeGate::setWindDirectionDeg(double direction) { m_windDirectionDeg = direction; }
+void RangeGate::setEastwardWindMps(double value) { m_eastwardWindMps = value; }
+void RangeGate::setNorthwardWindMps(double value) { m_northwardWindMps = value; }
+void RangeGate::setUpwardWindMps(double value) { m_upwardWindMps = value; }
+void RangeGate::setRetrievalResidualMps(double value) { m_retrievalResidualMps = value; }
+void RangeGate::setValidBeamCount(int count) { m_validBeamCount = count; }
 void RangeGate::setRadialWindSpeedMps(const QVector<double> &rws) { m_radialWindSpeedMps = rws; }
 void RangeGate::setCnrDb(const QVector<double> &cnr) { m_cnrDb = cnr; }
 void RangeGate::setTurbulenceIntensity(double ti) { m_turbulenceIntensity = ti; }
@@ -45,6 +55,11 @@ QJsonObject RangeGate::toJson() const
     json["heightM"] = m_heightM;
     json["windSpeedMps"] = m_windSpeedMps;
     json["windDirectionDeg"] = m_windDirectionDeg;
+    json["eastwardWindMps"] = m_eastwardWindMps;
+    json["northwardWindMps"] = m_northwardWindMps;
+    json["upwardWindMps"] = m_upwardWindMps;
+    json["retrievalResidualMps"] = m_retrievalResidualMps;
+    json["validBeamCount"] = m_validBeamCount;
     json["turbulenceIntensity"] = m_turbulenceIntensity;
     json["verticalShear"] = m_verticalShear;
     json["horizontalShear"] = m_horizontalShear;
@@ -70,6 +85,11 @@ void RangeGate::fromJson(const QJsonObject &json)
     m_heightM = json["heightM"].toDouble();
     m_windSpeedMps = json["windSpeedMps"].toDouble();
     m_windDirectionDeg = json["windDirectionDeg"].toDouble();
+    m_eastwardWindMps = json["eastwardWindMps"].toDouble();
+    m_northwardWindMps = json["northwardWindMps"].toDouble();
+    m_upwardWindMps = json["upwardWindMps"].toDouble();
+    m_retrievalResidualMps = json["retrievalResidualMps"].toDouble();
+    m_validBeamCount = json["validBeamCount"].toInt();
     m_turbulenceIntensity = json["turbulenceIntensity"].toDouble();
     m_verticalShear = json["verticalShear"].toDouble();
     m_horizontalShear = json["horizontalShear"].toDouble();

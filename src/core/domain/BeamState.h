@@ -18,6 +18,8 @@ class BeamState : public QObject
     Q_OBJECT
     Q_PROPERTY(BeamId beamId READ beamId WRITE setBeamId)
     Q_PROPERTY(double azimuthDeg READ azimuthDeg WRITE setAzimuthDeg)
+    Q_PROPERTY(double elevationDeg READ elevationDeg WRITE setElevationDeg)
+    Q_PROPERTY(double carrierFrequencyHz READ carrierFrequencyHz WRITE setCarrierFrequencyHz)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled)
     Q_PROPERTY(BeamStatus status READ status WRITE setStatus)
     Q_PROPERTY(double phaseErrorDeg READ phaseErrorDeg WRITE setPhaseErrorDeg)
@@ -29,6 +31,8 @@ public:
     // 属性访问器
     BeamId beamId() const { return m_beamId; }
     double azimuthDeg() const { return m_azimuthDeg; }
+    double elevationDeg() const { return m_elevationDeg; }
+    double carrierFrequencyHz() const { return m_carrierFrequencyHz; }
     bool enabled() const { return m_enabled; }
     BeamStatus status() const { return m_status; }
     QVector<double> cnrDbByGate() const { return m_cnrDbByGate; }
@@ -40,6 +44,8 @@ public:
     // 设置方法
     void setBeamId(BeamId id);
     void setAzimuthDeg(double azimuth);
+    void setElevationDeg(double elevation);
+    void setCarrierFrequencyHz(double frequency);
     void setEnabled(bool enabled);
     void setStatus(BeamStatus status);
     void setCnrDbByGate(const QVector<double> &cnr);
@@ -65,6 +71,8 @@ signals:
 private:
     BeamId m_beamId;
     double m_azimuthDeg;
+    double m_elevationDeg;
+    double m_carrierFrequencyHz;
     bool m_enabled;
     BeamStatus m_status;
     QVector<double> m_cnrDbByGate;

@@ -2,9 +2,11 @@
 #define BEAMPAGE_H
 
 #include <QWidget>
+#include <QVector>
 
 class QLabel;
 class QTableWidget;
+class BeamState;
 
 /**
  * @brief 波束页面
@@ -20,7 +22,8 @@ public:
     ~BeamPage() override;
 
     void setConnectionState(bool connected);
-    void updateSimulationData(double cnrDb, int validGates, double confidence);
+    void updateSimulationData(double cnrDb, int validGates);
+    void updateBeamData(const QVector<BeamState *> &beams);
 
 private:
     void setupUI();

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://radar.local/schemas/wind-retrieval-request-1.0.json",
+  "title": "Radar wind retrieval request",
+  "type": "object",
+  "required": ["schemaVersion", "taskId", "taskType", "observation"],
+  "properties": {
+    "schemaVersion": {"const": "radar.wind-retrieval.request/1.0"},
+    "taskId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "taskType": {"const": "wind-retrieval"},
+    "observation": {
+      "type": "object",
+      "required": ["timestampUtc", "azimuthDeg", "elevationDeg", "rangeM", "radialVelocityMps"],
+      "properties": {
+        "timestampUtc": {"type": "string", "format": "date-time"},
+        "instrumentName": {"type": "string"},
+        "latitudeDeg": {"type": "number", "minimum": -90, "maximum": 90},
+        "longitudeDeg": {"type": "number", "minimum": -180, "maximum": 180},
+        "altitudeM": {"type": "number"},
+        "azimuthDeg": {"type": "array", "minItems": 16, "items": {"type": "number"}},
+        "elevationDeg": {"type": "array", "minItems": 16, "items": {"type": "number"}},
+        "rangeM": {"type": "array", "minItems": 2, "items": {"type": "number", "exclusiveMinimum": 0}},
+        "radialVelocityMps": {"type": "array", "minItems": 16, "items": {"type": "array", "items": {"type": ["number", "null"]}}},
+        "cnrDb": {"type": "array", "items": {"type": "array", "items": {"type": ["number", "null"]}}}
+      },
+      "additionalProperties": false
+    },
+    "algorithm": {
+      "type": "object",
+      "properties": {
+        "name": {"const": "pyart-vad-browning"},
+        "validRayMin": {"type": "integer", "minimum": 16},
+        "minimumCnrDb": {"type": "number"}
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "directory": {"type": "string"},
+        "formats": {"type": "array", "uniqueItems": true, "items": {"enum": ["json", "csv", "netcdf", "png", "cfradial"]}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+

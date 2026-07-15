@@ -1,15 +1,24 @@
 #include "WindRoseWidget.h"
 #include <QPainter>
 #include <QtMath>
+#include <cmath>
 
 WindRoseWidget::WindRoseWidget(QWidget *parent)
     : QWidget(parent)
     , m_currentDirection(0)
+    , m_directionAnimation(new QVariantAnimation(this))
 {
     setupUI();
     setMinimumSize(200, 200);
     setMaximumSize(300, 300);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_directionAnimation->setDuration(900);
+    m_directionAnimation->setEasingCurve(QEasingCurve::InOutSine);
+    connect(m_directionAnimation, &QVariantAnimation::valueChanged, this,
+            [this](const QVariant &value) {
+        m_currentDirection = std::fmod(value.toDouble() + 360.0, 360.0);
+        update();
+    });
 }
 
 WindRoseWidget::~WindRoseWidget()
@@ -18,8 +27,17 @@ WindRoseWidget::~WindRoseWidget()
 
 void WindRoseWidget::setWindDirection(double direction)
 {
-    m_currentDirection = direction;
-    update();
+    const double target = std::fmod(direction + 360.0, 360.0);
+    if (!isVisible()) {
+        m_directionAnimation->stop();
+        m_currentDirection = target;
+        return;
+    }
+    const double delta = std::fmod(target - m_currentDirection + 540.0, 360.0) - 180.0;
+    m_directionAnimation->stop();
+    m_directionAnimation->setStartValue(m_currentDirection);
+    m_directionAnimation->setEndValue(m_currentDirection + delta);
+    m_directionAnimation->start();
 }
 
 void WindRoseWidget::setDirectionHistory(const QVector<double> &directions)
@@ -80,7 +98,7 @@ void WindRoseWidget::paintEvent(QPaintEvent *event)
         {315, QStringLiteral("NW")}
     };
 
-    painter.setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
+    painter.setFont(QFont("Microsoft YaHei", 11, QFont::Bold));
     for (const auto &dl : labels) {
         double rad = qDegreesToRadians(dl.angle - 90); // 0度=北，顺时针
         double cosA = qCos(rad);
@@ -139,7 +157,7 @@ void WindRoseWidget::paintEvent(QPaintEvent *event)
 
     // 度数显示
     painter.setPen(QColor("#374151"));
-    painter.setFont(QFont("Microsoft YaHei", 12, QFont::Bold));
+    painter.setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
     QRectF degreeRect(center.x() - 30, center.y() + outerRadius * 0.35, 60, 24);
     painter.drawText(degreeRect, Qt::AlignCenter,
                      QStringLiteral("%1°").arg(QString::number(m_currentDirection, 'f', 0)));

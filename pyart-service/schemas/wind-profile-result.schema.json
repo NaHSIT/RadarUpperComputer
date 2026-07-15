@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://radar.local/schemas/wind-profile-result-1.0.json",
+  "title": "Standard wind profile result",
+  "type": "object",
+  "required": ["schemaVersion", "taskId", "success", "summary", "levels", "products", "warnings", "errorCode", "elapsedMs"],
+  "properties": {
+    "schemaVersion": {"const": "radar.wind-profile/1.0"},
+    "taskId": {"type": "string"},
+    "success": {"type": "boolean"},
+    "algorithm": {"type": "object"},
+    "observationTimeUtc": {"type": "string", "format": "date-time"},
+    "coordinateReference": {"type": "object"},
+    "summary": {"type": "object"},
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["levelIndex", "heightMslM", "heightAglM", "eastwardWindMps", "northwardWindMps", "windSpeedMps", "windFromDirectionDeg", "confidencePct", "qualityFlag", "qualityText"]
+      }
+    },
+    "products": {"type": "array"},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "errorCode": {"type": "string"},
+    "errorMessage": {"type": "string"},
+    "elapsedMs": {"type": "number", "minimum": 0}
+  }
+}
+

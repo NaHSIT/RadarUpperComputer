@@ -20,6 +20,9 @@ class RangeGate : public QObject
     Q_PROPERTY(double heightM READ heightM WRITE setHeightM)
     Q_PROPERTY(double windSpeedMps READ windSpeedMps WRITE setWindSpeedMps)
     Q_PROPERTY(double windDirectionDeg READ windDirectionDeg WRITE setWindDirectionDeg)
+    Q_PROPERTY(double eastwardWindMps READ eastwardWindMps WRITE setEastwardWindMps)
+    Q_PROPERTY(double northwardWindMps READ northwardWindMps WRITE setNorthwardWindMps)
+    Q_PROPERTY(double upwardWindMps READ upwardWindMps WRITE setUpwardWindMps)
     Q_PROPERTY(double turbulenceIntensity READ turbulenceIntensity WRITE setTurbulenceIntensity)
     Q_PROPERTY(double verticalShear READ verticalShear WRITE setVerticalShear)
     Q_PROPERTY(double horizontalShear READ horizontalShear WRITE setHorizontalShear)
@@ -35,6 +38,11 @@ public:
     double heightM() const { return m_heightM; }
     double windSpeedMps() const { return m_windSpeedMps; }
     double windDirectionDeg() const { return m_windDirectionDeg; }
+    double eastwardWindMps() const { return m_eastwardWindMps; }
+    double northwardWindMps() const { return m_northwardWindMps; }
+    double upwardWindMps() const { return m_upwardWindMps; }
+    double retrievalResidualMps() const { return m_retrievalResidualMps; }
+    int validBeamCount() const { return m_validBeamCount; }
     QVector<double> radialWindSpeedMps() const { return m_radialWindSpeedMps; }
     QVector<double> cnrDb() const { return m_cnrDb; }
     double turbulenceIntensity() const { return m_turbulenceIntensity; }
@@ -50,6 +58,11 @@ public:
     void setHeightM(double height);
     void setWindSpeedMps(double speed);
     void setWindDirectionDeg(double direction);
+    void setEastwardWindMps(double value);
+    void setNorthwardWindMps(double value);
+    void setUpwardWindMps(double value);
+    void setRetrievalResidualMps(double value);
+    void setValidBeamCount(int count);
     void setRadialWindSpeedMps(const QVector<double> &rws);
     void setCnrDb(const QVector<double> &cnr);
     void setTurbulenceIntensity(double ti);
@@ -76,6 +89,11 @@ private:
     double m_heightM;
     double m_windSpeedMps;
     double m_windDirectionDeg;
+    double m_eastwardWindMps;
+    double m_northwardWindMps;
+    double m_upwardWindMps;
+    double m_retrievalResidualMps;
+    int m_validBeamCount;
     QVector<double> m_radialWindSpeedMps;
     QVector<double> m_cnrDb;
     double m_turbulenceIntensity;

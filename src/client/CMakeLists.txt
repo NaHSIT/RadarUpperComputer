@@ -8,6 +8,8 @@ set(CLIENT_SOURCES
     ui/pages/BeamPage.cpp
     ui/pages/SpectrumPage.cpp
     ui/pages/DeviceHealthPage.cpp
+    ui/pages/DataQualityPage.cpp
+    ui/pages/DeviceStatusPage.cpp
     ui/pages/SettingsPage.cpp
     ui/widgets/MetricCard.cpp
     ui/widgets/WindTrendChart.cpp
@@ -15,6 +17,7 @@ set(CLIENT_SOURCES
     ui/widgets/BeamHealthGrid.cpp
     ui/widgets/AlarmList.cpp
     ui/widgets/RangeGateTable.cpp
+    ui/widgets/WindVectorFieldWidget.cpp
 )
 
 set(CLIENT_HEADERS
@@ -26,6 +29,8 @@ set(CLIENT_HEADERS
     ui/pages/BeamPage.h
     ui/pages/SpectrumPage.h
     ui/pages/DeviceHealthPage.h
+    ui/pages/DataQualityPage.h
+    ui/pages/DeviceStatusPage.h
     ui/pages/SettingsPage.h
     ui/widgets/MetricCard.h
     ui/widgets/WindTrendChart.h
@@ -33,6 +38,7 @@ set(CLIENT_HEADERS
     ui/widgets/BeamHealthGrid.h
     ui/widgets/AlarmList.h
     ui/widgets/RangeGateTable.h
+    ui/widgets/WindVectorFieldWidget.h
 )
 
 add_executable(radar-client
@@ -61,3 +67,21 @@ set_target_properties(radar-client PROPERTIES
     AUTOMOC ON
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
+
+add_custom_command(TARGET radar-client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/pyart-service
+        $<TARGET_FILE_DIR:radar-client>/pyart-service
+    COMMENT "Deploying Py-ART wind retrieval service"
+)
+
+if(TARGET Qt6::QSQLiteDriverPlugin)
+    add_custom_command(TARGET radar-client POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            $<TARGET_FILE_DIR:radar-client>/sqldrivers
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:Qt6::QSQLiteDriverPlugin>
+            $<TARGET_FILE_DIR:radar-client>/sqldrivers/
+        COMMENT "Deploying SQLite driver"
+    )
+endif()

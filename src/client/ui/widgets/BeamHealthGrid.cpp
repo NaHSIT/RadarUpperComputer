@@ -13,8 +13,12 @@ constexpr int kCardHeight = 100;
 BeamHealthGrid::BeamHealthGrid(QWidget *parent) : QWidget(parent)
 {
     m_beamStatuses.resize(5);
+    const double azimuths[] = {0.0, 45.0, 135.0, 225.0, 315.0};
     for (int index = 0; index < 5; ++index) {
-        m_beamStatuses[index] = {QStringLiteral("LOS%1").arg(index + 1), index * 72.0, "normal", 0.0, 0};
+        m_beamStatuses[index] = {
+            index == 0 ? QStringLiteral("法向") : QStringLiteral("斜束%1").arg(index),
+            azimuths[index], index == 0 ? 90.0 : 75.0, "normal", 0.0, 0
+        };
     }
     setMinimumHeight(150);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -72,7 +76,12 @@ void BeamHealthGrid::drawBeamCard(QPainter &painter, int index, const BeamStatus
     painter.drawText(QRect(content.left(), content.top(), content.width(), 18), Qt::AlignLeft | Qt::AlignVCenter, status.beamId);
     painter.setPen(QColor("#52606d"));
     painter.setFont(QFont("Microsoft YaHei", 9));
-    painter.drawText(QRect(content.left(), content.top() + 22, content.width(), 16), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("%1°").arg(status.azimuthDeg, 0, 'f', 0));
+    const QString geometry = status.elevationDeg >= 89.5
+        ? QStringLiteral("法向 · 仰角 90°")
+        : QStringLiteral("方位 %1° · 仰角 %2°")
+              .arg(status.azimuthDeg, 0, 'f', 0).arg(status.elevationDeg, 0, 'f', 0);
+    painter.drawText(QRect(content.left(), content.top() + 22, content.width(), 16),
+                     Qt::AlignLeft | Qt::AlignVCenter, geometry);
     painter.drawText(QRect(content.left(), content.top() + 41, content.width(), 16), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("CNR %1").arg(status.cnrAvg, 0, 'f', 1));
     painter.drawText(QRect(content.left(), content.top() + 60, content.width(), 16), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("层 %1").arg(status.validGates));
 }

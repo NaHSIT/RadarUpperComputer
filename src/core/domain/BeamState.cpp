@@ -5,6 +5,8 @@ BeamState::BeamState(QObject *parent)
     : QObject(parent)
     , m_beamId(BeamId::LOS1)
     , m_azimuthDeg(0)
+    , m_elevationDeg(90)
+    , m_carrierFrequencyHz(24.0e9)
     , m_enabled(true)
     , m_status(BeamStatus::Normal)
     , m_phaseErrorDeg(0)
@@ -17,6 +19,8 @@ BeamState::~BeamState()
 
 void BeamState::setBeamId(BeamId id) { m_beamId = id; }
 void BeamState::setAzimuthDeg(double azimuth) { m_azimuthDeg = azimuth; }
+void BeamState::setElevationDeg(double elevation) { m_elevationDeg = elevation; }
+void BeamState::setCarrierFrequencyHz(double frequency) { m_carrierFrequencyHz = frequency; }
 void BeamState::setEnabled(bool enabled) { m_enabled = enabled; }
 void BeamState::setPhaseErrorDeg(double error) { m_phaseErrorDeg = error; }
 void BeamState::setLastUpdateTime(const QDateTime &time) { m_lastUpdateTime = time; }
@@ -50,6 +54,8 @@ QJsonObject BeamState::toJson() const
     QJsonObject json;
     json["beamId"] = static_cast<int>(m_beamId);
     json["azimuthDeg"] = m_azimuthDeg;
+    json["elevationDeg"] = m_elevationDeg;
+    json["carrierFrequencyHz"] = m_carrierFrequencyHz;
     json["enabled"] = m_enabled;
     json["status"] = static_cast<int>(m_status);
     json["phaseErrorDeg"] = m_phaseErrorDeg;
@@ -70,6 +76,8 @@ void BeamState::fromJson(const QJsonObject &json)
 {
     m_beamId = static_cast<BeamId>(json["beamId"].toInt());
     m_azimuthDeg = json["azimuthDeg"].toDouble();
+    m_elevationDeg = json["elevationDeg"].toDouble(90.0);
+    m_carrierFrequencyHz = json["carrierFrequencyHz"].toDouble(24.0e9);
     m_enabled = json["enabled"].toBool();
     m_status = static_cast<BeamStatus>(json["status"].toInt());
     m_phaseErrorDeg = json["phaseErrorDeg"].toDouble();

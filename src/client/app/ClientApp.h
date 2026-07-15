@@ -7,6 +7,8 @@
 class MainWindow;
 class DeviceService;
 class AlarmService;
+class PyArtWindService;
+class DataService;
 
 class ClientApp : public QObject
 {
@@ -32,6 +34,8 @@ private:
     QScopedPointer<MainWindow> m_mainWindow;
     DeviceService *m_deviceService;
     AlarmService *m_alarmService;
+    PyArtWindService *m_pyArtWindService;
+    DataService *m_dataService;
 };
 
 #endif // CLIENTAPP_H

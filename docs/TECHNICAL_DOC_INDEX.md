@@ -8,6 +8,9 @@
 | [DATA_FORMAT.md](DATA_FORMAT.md) | 定义二进制帧格式与 `0x8100` payload 字段格式 |
 | [COMM_PROTOCOL.md](COMM_PROTOCOL.md) | 单独说明通信协议、连接流程、状态机、联调要求 |
 | [DEPLOYMENT_AND_NETWORK.md](DEPLOYMENT_AND_NETWORK.md) | 说明客户端、雷达端、浏览器维护端的部署与组网建议 |
+| [PYART_INTEGRATION.md](PYART_INTEGRATION.md) | 定义 Py-ART 风场反演、质量控制、C++ 适配和标准产品 |
+| [ZYNQ7015_RADAR_DATA_AND_COMMUNICATION_SPEC.md](ZYNQ7015_RADAR_DATA_AND_COMMUNICATION_SPEC.md) | 定义 Zynq-7015 硬件数据链路、板内记录、TCP V1/V2、浏览器接口及雷达产品格式 |
+| [ZYNQ_UPPER_COMPUTER_DATA_INTERFACE_GUIDE.md](ZYNQ_UPPER_COMPUTER_DATA_INTERFACE_GUIDE.md) | 面向 Zynq 开发的当前上位机联调实施说明、C 编码方法和黄金测试帧 |
 
 ## 2. 建议下一步继续补的文档
 

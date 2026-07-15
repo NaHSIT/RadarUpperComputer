@@ -17,6 +17,7 @@ public:
     struct BeamStatus {
         QString beamId;
         double azimuthDeg;
+        double elevationDeg;
         QString status;
         double cnrAvg;
         int validGates;
